@@ -3,6 +3,7 @@
  *  A chapter marked † has a story title whose topic was inferred; a teacher should confirm it. */
 
 export type GameId = "sabzi" | "laddoo" | "cat" | "rangoli" | "sounds" | "caps" | "listen"
+  | "colours" | "butterfly" | "rhyme"
   | "beads" | "stall" | "share" | "hundreds";
 export type Lang = "en" | "hi";
 export type Subject = "maths" | "english";
@@ -79,6 +80,25 @@ export const SKILLS: Skill[] = [
     canDo: { en: "I can spot the one that breaks the pattern", hi: "मैं पैटर्न तोड़ने वाला ढूँढ सकता/सकती हूँ" },
     place: { en: "Toran on every door", hi: "हर दरवाज़े पर तोरण" } },
 
+  // Colour and Size Garden: calm early-years practice
+  { id: "colour_pick", game: "colours", level: 1, cls: 1, chapter: "Early-years extra (not from a specific NCERT chapter) · colours", prereq: [],
+    name: { en: "Finding colours", hi: "रंग पहचानना" },
+    canDo: { en: "I can find the red balloon", hi: "मैं लाल गुब्बारा ढूँढ सकता/सकती हूँ" },
+    place: { en: "Flowers bloom in the garden", hi: "बगीचे में फूल खिल गए" } },
+  { id: "size_compare", game: "colours", level: 2, cls: 1, chapter: "Early-years extra (not from a specific NCERT chapter) · big and small", prereq: [],
+    name: { en: "Big and small", hi: "बड़ा और छोटा" },
+    canDo: { en: "I can tell which one is big and which is small", hi: "मैं बता सकता/सकती हूँ कि कौन बड़ा है और कौन छोटा" },
+    place: { en: "A big tree and a small bush", hi: "एक बड़ा पेड़ और एक छोटी झाड़ी" } },
+  // Butterfly Count and Match
+  { id: "count_match", game: "butterfly", level: 1, cls: 1, chapter: "Early-years extra (not from a specific NCERT chapter) · numbers 1 to 10", prereq: [],
+    name: { en: "Counting and finding the number", hi: "गिनकर संख्या ढूँढना" },
+    canDo: { en: "I can count 6 butterflies and find the number 6", hi: "मैं 6 तितलियाँ गिनकर संख्या 6 ढूँढ सकता/सकती हूँ" },
+    place: { en: "Butterflies visit the garden", hi: "तितलियाँ बगीचे में आईं" } },
+  { id: "num_next", game: "butterfly", level: 2, cls: 1, chapter: "Early-years extra (not from a specific NCERT chapter) · numbers in order", prereq: ["count_match"],
+    name: { en: "Which number comes next", hi: "आगे कौन-सी संख्या आएगी" },
+    canDo: { en: "I know that 5 comes after 4", hi: "मुझे पता है कि 4 के बाद 5 आता है" },
+    place: { en: "A garden path of number stones", hi: "संख्या वाले पत्थरों का रास्ता" } },
+
   // ===== Class 1 · English (Mridang) =====
   // Sound Garden
   { id: "first_sound", game: "sounds", level: 1, cls: 1, chapter: "Mridang · all units (word sounds)", prereq: [],
@@ -93,6 +113,15 @@ export const SKILLS: Skill[] = [
     name: { en: "Finding the first letter of a word", hi: "शब्द का पहला अक्षर ढूँढना" },
     canDo: { en: "I can hear 'pen' and find the letter p", hi: "मैं 'pen' सुनकर p ढूँढ सकता/सकती हूँ" },
     place: { en: "A butterfly garden", hi: "तितलियों का बगीचा" } },
+  // Rhyme Pond: calm early-years listening
+  { id: "rhyme_pick", game: "rhyme", level: 1, cls: 1, chapter: "Early-years extra (not from a specific NCERT chapter) · rhymes", prereq: [],
+    name: { en: "Hearing rhymes", hi: "तुक सुनना" },
+    canDo: { en: "I can hear that cat and hat rhyme", hi: "मैं सुन सकता/सकती हूँ कि cat और hat की तुक मिलती है" },
+    place: { en: "Lily pads on the pond", hi: "तालाब में कमल के पत्ते" } },
+  { id: "rhyme_odd", game: "rhyme", level: 2, cls: 1, chapter: "Early-years extra (not from a specific NCERT chapter) · rhymes", prereq: ["rhyme_pick"],
+    name: { en: "Finding the word that does not rhyme", hi: "जिसकी तुक नहीं मिलती उसे ढूँढना" },
+    canDo: { en: "I can find the word that does not rhyme", hi: "मैं वह शब्द ढूँढ सकता/सकती हूँ जिसकी तुक नहीं मिलती" },
+    place: { en: "Frogs on the lily pads", hi: "कमल के पत्तों पर मेंढक" } },
   // Cap Seller's Caps
   { id: "read_cvc", game: "caps", level: 1, cls: 1, chapter: "Mridang · The Cap Seller and the Monkeys", prereq: ["letter_sound"],
     name: { en: "Reading 3-letter words by blending", hi: "आवाज़ें मिलाकर 3 अक्षर के शब्द पढ़ना" },
@@ -201,6 +230,12 @@ export const GAMES: { id: GameId; cls: Cls; subject: Subject; name: Record<Lang,
     blurb: { en: "Read and build little words", hi: "छोटे शब्द पढ़ो और बनाओ" } },
   { id: "listen", cls: 1, subject: "english", name: { en: "Listen and Tap", hi: "सुनो और छुओ" },
     blurb: { en: "Hear English words and sentences", hi: "अंग्रेज़ी शब्द और वाक्य सुनो" } },
+  { id: "colours", cls: 1, subject: "maths", name: { en: "Colour & Size Garden", hi: "रंग और आकार का बगीचा" },
+    blurb: { en: "Find colours, big and small", hi: "रंग, बड़ा और छोटा ढूँढो" } },
+  { id: "butterfly", cls: 1, subject: "maths", name: { en: "Butterfly Count & Match", hi: "तितली गिनो और मिलाओ" },
+    blurb: { en: "Count butterflies, find the number", hi: "तितलियाँ गिनो, संख्या ढूँढो" } },
+  { id: "rhyme", cls: 1, subject: "english", name: { en: "Rhyme Pond", hi: "तुकबंदी का तालाब" },
+    blurb: { en: "Which words sound the same at the end?", hi: "किन शब्दों के आख़िर की आवाज़ एक जैसी है?" } },
   { id: "beads", cls: 2, subject: "maths", name: { en: "Bead Mala", hi: "मोती माला" },
     blurb: { en: "Make necklaces with strings of 10", hi: "10 मोतियों की लड़ियों से हार बनाओ" } },
   { id: "stall", cls: 2, subject: "maths", name: { en: "Fair Stall", hi: "मेले का स्टॉल" },

@@ -1,5 +1,7 @@
-import { AnswerSet, check, choices, hint, nextItem, prompt, Step } from "../src/engine/items";
-import { genClass1, PIC, SENTENCES, CVC } from "../src/engine/class1";
+import { AnswerSet, check, choices, hint, mistakeFeedback, nextItem, prompt, Step } from "../src/engine/items";
+import { genClass1, PIC, SENTENCES, CVC, RHYMES, COLOURS, THINGS } from "../src/engine/class1";
+import { weeklyReport } from "../src/store";
+import type { Child } from "../src/store";
 import { makeRng } from "../src/engine/rng";
 import { SKILLS } from "../src/engine/skills";
 import { Session } from "../src/engine/session";
@@ -20,9 +22,9 @@ function right(it: Item) {
 }
 
 describe("class 1 generators", () => {
-  it("has 7 games and 22 skills, every one with a chapter", () => {
-    expect(new Set(C1.map(s => s.game)).size).toBe(7);
-    expect(C1).toHaveLength(22);
+  it("has 10 games and 28 skills, every one with a chapter", () => {
+    expect(new Set(C1.map(s => s.game)).size).toBe(10);
+    expect(C1).toHaveLength(28);
     expect(C1.every(s => s.chapter.length > 5)).toBe(true);
   });
 
@@ -118,5 +120,129 @@ describe("class 1 sessions", () => {
       expect(grew, g).toBeTruthy();
       expect(rec(l, grew!).state).toBe("mastered");
     }
+  });
+});
+
+describe("calm garden games", () => {
+  const gen = (skill: string, step: Step, rng: ReturnType<typeof makeRng>) => {
+    const it = genClass1(skill, step, rng)!;
+    if (it.kind !== "pick") throw new Error("pick item expected");
+    return it;
+  };
+  const familyOf = (w: string) => RHYMES.findIndex(f => f.includes(w));
+
+  it("colours: the colour asked for is among the choices, once; step 3 has four", () => {
+    const rng = makeRng(31);
+    for (let i = 0; i < 300; i++) {
+      const step = (1 + (i % 3)) as Step, it = gen("colour_pick", step, rng);
+      expect(it.options).toHaveLength(step === 3 ? 4 : 3);
+      expect(it.options.filter(o => o === it.target)).toHaveLength(1);
+      expect(it.answer).toBe(it.target);
+      expect(COLOURS as readonly string[]).toContain(it.answer);
+      expect(THINGS as readonly string[]).toContain(it.seq![0]);
+    }
+  });
+
+  it("sizes: the answer is the biggest or smallest one, as the prompt says", () => {
+    const rng = makeRng(32);
+    for (let i = 0; i < 300; i++) {
+      const step = (1 + (i % 3)) as Step, it = gen("size_compare", step, rng);
+      expect(it.options).toHaveLength(step === 1 ? 2 : 3);
+      expect(it.answer).toBe(it.seq![0] === "big" ? "3" : "1");
+      expect(prompt(it, "en")).toContain(it.seq![0]);
+    }
+  });
+
+  it("counting and matching: 1 to 10, three different numbers, one of them right", () => {
+    const rng = makeRng(33);
+    for (let i = 0; i < 300; i++) {
+      const it = gen("count_match", (1 + (i % 3)) as Step, rng);
+      const n = Number(it.answer);
+      expect(n).toBeGreaterThanOrEqual(1); expect(n).toBeLessThanOrEqual(10);
+      expect(it.options.map(Number).every(x => x >= 1 && x <= 10)).toBe(true);
+      expect(it.options).toHaveLength(3);
+    }
+  });
+
+  it("which number comes next: three in a row, the answer is one more, and the choices do not repeat the ones shown", () => {
+    const rng = makeRng(34);
+    for (let i = 0; i < 300; i++) {
+      const it = gen("num_next", (1 + (i % 3)) as Step, rng);
+      const [a, b, c] = it.seq!.map(Number);
+      expect([b - a, c - b]).toEqual([1, 1]);
+      expect(Number(it.answer)).toBe(c + 1);
+      expect(Number(it.answer)).toBeLessThanOrEqual(20);
+      expect(it.options.filter(o => it.seq!.includes(o))).toHaveLength(0);
+    }
+  });
+
+  it("rhymes: every word has a picture; the right word rhymes, the others do not", () => {
+    RHYMES.flat().forEach(w => expect(PIC[w], w).toBeTruthy());
+    const rng = makeRng(35);
+    for (let i = 0; i < 400; i++) {
+      const step = (1 + (i % 3)) as Step, it = gen("rhyme_pick", step, rng);
+      expect(familyOf(it.answer)).toBe(familyOf(it.target));
+      expect(it.answer).not.toBe(it.target);
+      const wrong = it.options.filter(o => o !== it.answer);
+      expect(wrong).toHaveLength(2);
+      wrong.forEach(w => expect(familyOf(w)).not.toBe(familyOf(it.target)));
+      if (step === 1) wrong.forEach(w => expect(w[0]).not.toBe(it.target[0]));
+      it.options.forEach(o => expect(PIC[o]).toBeTruthy());
+    }
+  });
+
+  it("rhyme odd one out: exactly two rhyme and the answer is the other", () => {
+    const rng = makeRng(36);
+    for (let i = 0; i < 400; i++) {
+      const it = gen("rhyme_odd", (1 + (i % 3)) as Step, rng);
+      const [a, b] = it.seq!;
+      expect(familyOf(a)).toBe(familyOf(b));
+      expect(familyOf(it.answer)).not.toBe(familyOf(a));
+      expect(new Set(it.options)).toEqual(new Set([a, b, it.answer]));
+    }
+  });
+
+  it("picking a word that starts the same gets a gentle, specific reply", () => {
+    const item: Item = { kind: "pick", skill: "rhyme_pick", mode: "rhyme", target: "cat", options: ["hat", "cap", "dog"], answer: "hat" };
+    const wrong = check(item, { pick: "cap" });
+    expect(wrong).toEqual({ ok: false, mistake: "same_start" });
+    expect(mistakeFeedback("same_start", "en")).toMatch(/end/);
+    expect(mistakeFeedback("same_start", "hi").length).toBeGreaterThan(10);
+  });
+
+  it("an answer is not repeated within a session, even with few words", () => {
+    const rng = makeRng(37), used = new AnswerSet();
+    const keys = new Set<string>();
+    for (let i = 0; i < 12; i++) { const it = nextItem("colour_pick", 1, rng, used); keys.add(JSON.stringify([it.skill, (it as { target: string }).target, (it as { seq: string[] }).seq])); }
+    expect(keys.size).toBe(12);
+  });
+});
+
+describe("saved data from before the new games", () => {
+  /** A family saved by the previous version: only the older skills are known. */
+  const old = (): Child => ({
+    id: "c1", nickname: "Riya", cls: 1, lang: "hi", avatar: "🦚", openClasses: [1], createdAt: "2026-10-01T00:00:00Z",
+    learner: { skills: { count10: { state: "mastered", p: 0.9, lastDay: "2026-10-20", reviewStep: 0, nextReview: "2026-10-22", masteredOn: "2026-10-20", workedInRow: 0 } }, misconceptions: {} },
+    sessions: [{ id: "s1", date: "2026-10-20", game: "sabzi", minutes: 5, items: 6, alone: 4, grown: ["count10"], attempts: [{ skill: "count10", correct: true, hint: 0, phase: "practice" }] }],
+  });
+
+  it("every new game starts for a child with old data, and old progress is untouched", () => {
+    for (const g of ["colours", "butterfly", "rhyme"] as const) {
+      const child = old();
+      const s = new Session(child.learner, g, "2026-10-25", makeRng(41), 60);
+      let grew: string | undefined;
+      for (let i = 0; i < 40 && !grew; i++) grew = s.submit(true).grew;      // the old due review comes first, as it should
+      expect(grew, g).toBeTruthy();
+      expect(SKILLS.find(k => k.id === grew)!.game).toBe(g);
+      expect(child.learner.skills.count10.state).toBe("mastered");
+    }
+  });
+
+  it("the weekly report still builds for old data, before and after playing a new game", () => {
+    const child = old();
+    expect(() => weeklyReport(child, "2026-10-25", "en")).not.toThrow();
+    const s = new Session(child.learner, "rhyme", "2026-10-25", makeRng(42), 60);
+    for (let i = 0; i < 6; i++) s.submit(true);
+    expect(() => weeklyReport(child, "2026-10-25", "hi")).not.toThrow();
   });
 });

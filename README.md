@@ -11,6 +11,9 @@ A learning town for CBSE Classes 1 to 3: maths for every class, and English for 
 | Sound Garden | 1 · Mridang (English), all units | First sounds, letters and sounds, first letter of a word |
 | Cap Seller's Caps | 1 · Mridang: The Cap Seller and the Monkeys, A Farm | Read and build 3-letter words |
 | Listen and Tap | 1 · Mridang: Two Little Hands, Greetings, A Farm, The Food We Eat, The Four Seasons | Book words, short sentences, sight words |
+| Colour & Size Garden | 1 · early-years extra (not an NCERT chapter) | Find colours, big and small |
+| Butterfly Count & Match | 1 · early-years extra | Count to 10 and find the number; which number comes next |
+| Rhyme Pond | 1 · early-years extra | Hear which words rhyme; find the odd one out |
 | Bead Mala | 2 · Joyful Mathematics, Fun with Numbers | Make, read and compare 2-digit numbers |
 | Fair Stall | 2 · Joyful Mathematics, Fun at the Fair | Add prices (without and with carrying); give change |
 | Fair Share | 3 · Maths Mela, Fair Share | Share equally; remainders; halves and quarters |

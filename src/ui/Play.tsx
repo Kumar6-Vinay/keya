@@ -19,11 +19,15 @@ import { Laddoo } from "./games/c1/Laddoo";
 import { Cat } from "./games/c1/Cat";
 import { Rangoli } from "./games/c1/Rangoli";
 import { English } from "./games/c1/English";
+import { Colours } from "./games/c1/Colours";
+import { Butterfly } from "./games/c1/Butterfly";
+import { Rhyme } from "./games/c1/Rhyme";
 import type { Item } from "../engine/items";
 import type { GameProps } from "./games/types";
 
 const GAME_VIEW: Record<GameId, (p: GameProps) => preact.JSX.Element | null> = {
   sabzi: Sabzi, laddoo: Laddoo, cat: Cat, rangoli: Rangoli, sounds: English, caps: English, listen: English,
+  colours: Colours, butterfly: Butterfly, rhyme: Rhyme,
   beads: Beads, stall: Stall, share: Share, hundreds: Hundreds,
 };
 
@@ -213,6 +217,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
 
 export const PLACE_ICON: Record<string, string> = {
   count10: "🛒", count20: "🍉", more_less: "⚖️", bond10: "🍬", add10: "🫖", sub10: "🪑", addsub20: "🍲",
+  colour_pick: "🌷", size_compare: "🌳", count_match: "🦋", num_next: "🪨", rhyme_pick: "🪷", rhyme_odd: "🐸",
   position: "🏡", shape_name: "🪁", shape_obj: "🔷", pat_next: "🌺", pat_next2: "🪔", pat_fix: "🎏",
   first_sound: "🌻", letter_sound: "🎠", letter_pick: "🦋", read_cvc: "🌳", build_cvc: "🧢", build_cvc2: "🚜",
   vocab: "🐄", sentence: "🌈", sight: "📚",

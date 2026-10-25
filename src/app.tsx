@@ -221,6 +221,7 @@ function SayOnce({ text, lang }: { text: string; lang: Lang }) {
 
 const DISTRICT: Record<GameId, { bg: string; icon: string }> = {
   sabzi: { bg: "#fde2cf", icon: "🥕" }, laddoo: { bg: "#ffe9b8", icon: "🍬" }, cat: { bg: "#e6e0f8", icon: "🐱" }, rangoli: { bg: "#fbd8e6", icon: "🌺" },
+  colours: { bg: "#e9f3dc", icon: "🎨" }, butterfly: { bg: "#e6eefb", icon: "🦋" }, rhyme: { bg: "#dcf1ee", icon: "🐸" },
   sounds: { bg: "#dff3d6", icon: "🌻" }, caps: { bg: "#d9ecf7", icon: "🧢" }, listen: { bg: "#f6e7d2", icon: "👂" },
   beads: { bg: "#fde6c8", icon: "📿" }, stall: { bg: "#fbd3d0", icon: "🎪" },
   share: { bg: "#d8efd3", icon: "🧺" }, hundreds: { bg: "#d6e4fa", icon: "🧱" },

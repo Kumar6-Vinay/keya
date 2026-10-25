@@ -355,7 +355,7 @@ export function mistakeFeedback(m: Mistake | undefined, lang: Lang): string {
     case "unequal_parts": return T(lang, "Those pieces are not the same size.", "वे टुकड़े बराबर नहीं हैं।");
     case "unneeded_trade": return T(lang, "This column doesn't need a trade. Look again.", "इस कॉलम में बदलने की ज़रूरत नहीं। फिर से देखो।");
     case "chose_opposite": case "off_by_one": case "overfilled": case "end_sound": case "letter_reversal": case "vowel_swap":
-    case "letters_out_of_order": case "near_word": case "near_shape": case "wrong_pick":
+    case "letters_out_of_order": case "near_word": case "near_shape": case "wrong_pick": case "same_start":
       return feedbackClass1(m, lang);
     default: return T(lang, "Not yet. Look again.", "अभी नहीं। फिर से देखो।");
   }
