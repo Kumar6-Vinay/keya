@@ -86,7 +86,7 @@ export function seedFamily(lang: Lang, target?: string) {
 }
 
 export const DISTRICT_ICON: Record<GameId, string> = {
-  sabzi: "🥕", laddoo: "🍬", cat: "🐱", rangoli: "🌺", sounds: "🌻", caps: "🧢", listen: "👂", beads: "📿", stall: "🎪", share: "🧺", hundreds: "🧱",
+  sabzi: "🥕", laddoo: "🍬", cat: "🐱", rangoli: "🌺", sounds: "🌻", caps: "🧢", listen: "👂", colours: "🎨", butterfly: "🦋", rhyme: "🐸", beads: "📿", stall: "🎪", share: "🧺", hundreds: "🧱",
 };
 
 /** Open the app with a seeded family and start `game`. */

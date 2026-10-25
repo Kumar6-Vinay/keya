@@ -19,11 +19,15 @@ import { Laddoo } from "./games/c1/Laddoo";
 import { Cat } from "./games/c1/Cat";
 import { Rangoli } from "./games/c1/Rangoli";
 import { English } from "./games/c1/English";
+import { Colours } from "./games/c1/Colours";
+import { Butterfly } from "./games/c1/Butterfly";
+import { Rhyme } from "./games/c1/Rhyme";
 import type { Item } from "../engine/items";
 import type { GameProps } from "./games/types";
 
 const GAME_VIEW: Record<GameId, (p: GameProps) => preact.JSX.Element | null> = {
   sabzi: Sabzi, laddoo: Laddoo, cat: Cat, rangoli: Rangoli, sounds: English, caps: English, listen: English,
+  colours: Colours, butterfly: Butterfly, rhyme: Rhyme,
   beads: Beads, stall: Stall, share: Share, hundreds: Hundreds,
 };
 
@@ -31,8 +35,9 @@ export interface PlayResult { id: string; minutes: number; items: number; alone:
 
 type Mode = "demo" | "play" | "grew";
 
-export function Play({ family, child, game, onSave, onEnd, onBreak }: {
+export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
   family: Family; child: Child; game: GameId;
+  onMid: (midPlay: boolean) => void;
   onSave: (r: PlayResult) => void;
   onEnd: (r: PlayResult) => void;
   onBreak: () => void;
@@ -58,11 +63,14 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
   // Time limit: finish the current item, then say goodbye.
   useEffect(() => {
     const id = setInterval(() => { if (session.minutes() >= family.limitMin) session.timeUp(); }, 15000);
-    return () => { clearInterval(id); stop(); };
+    // Leaving by Back or Home keeps what was done so far.
+    return () => { clearInterval(id); stop(); if (session.log.length) onSave(result()); };
   }, []);
 
   // Test hook (dev builds only): lets the automated test read the current item.
   if (import.meta.env.DEV) (window as unknown as { __turn: Turn }).__turn = turn;
+
+  useEffect(() => { onMid(session.log.length > 0); }, [turn]);
 
   // New item: maybe a demo first (new skill), then the spoken prompt.
   useEffect(() => {
@@ -103,6 +111,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
 
   const onAnswer = (ok: boolean, mistake?: Mistake) => {
     const o = session.submit(ok, mistake);
+    onMid(true);
     onSave(result());
     if (ok) {
       chime("good");
@@ -208,6 +217,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
 
 export const PLACE_ICON: Record<string, string> = {
   count10: "🛒", count20: "🍉", more_less: "⚖️", bond10: "🍬", add10: "🫖", sub10: "🪑", addsub20: "🍲",
+  colour_pick: "🌷", size_compare: "🌳", count_match: "🦋", num_next: "🪨", rhyme_pick: "🪷", rhyme_odd: "🐸",
   position: "🏡", shape_name: "🪁", shape_obj: "🔷", pat_next: "🌺", pat_next2: "🪔", pat_fix: "🎏",
   first_sound: "🌻", letter_sound: "🎠", letter_pick: "🦋", read_cvc: "🌳", build_cvc: "🧢", build_cvc2: "🚜",
   vocab: "🐄", sentence: "🌈", sight: "📚",

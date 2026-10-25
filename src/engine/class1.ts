@@ -73,6 +73,31 @@ export type Shape = (typeof SHAPES)[number];
 export const SHAPE_OBJ: Record<Shape, string[]> = {
   circle: ["🪙", "🍪", "🕐", "🛞", "🍩"], triangle: ["🔺", "🍕", "⛺", "📐"], square: ["🔲", "🧇", "🎲", "🖼️"], rectangle: ["📱", "🚪", "📖", "💵"],
 };
+/** Calm-garden banks: colours drawn in soft shades, size pictures, and rhyme families (all words have pictures). */
+export const COLOURS = ["red", "blue", "yellow", "green", "orange", "purple"] as const;
+export type Colour = (typeof COLOURS)[number];
+export const COLOUR_WORD: Record<Colour, Record<Lang, string>> = {
+  red: { en: "red", hi: "लाल" }, blue: { en: "blue", hi: "नीला" }, yellow: { en: "yellow", hi: "पीला" },
+  green: { en: "green", hi: "हरा" }, orange: { en: "orange", hi: "नारंगी" }, purple: { en: "purple", hi: "बैंगनी" },
+};
+export const COLOUR_HEX: Record<Colour, string> = { red: "#e8826a", blue: "#6f9be0", yellow: "#f2c94c", green: "#74c07e", orange: "#f0a05a", purple: "#a98bd6" };
+export const THINGS = ["balloon", "flower", "kite"] as const;
+export type Thing = (typeof THINGS)[number];
+export const THING_WORD: Record<Thing, Record<Lang, string>> = {
+  balloon: { en: "balloon", hi: "गुब्बारा" }, flower: { en: "flower", hi: "फूल" }, kite: { en: "kite", hi: "पतंग" },
+};
+export const SIZE_PICS = ["🐶", "🐱", "🍎", "⭐", "🐠", "🌷", "🦋", "🐢"];
+/** Size ranks used as the choices: 1 small, 2 middle, 3 big. */
+export const SIZE_WORD: Record<string, Record<Lang, string>> = {
+  "1": { en: "small", hi: "छोटा" }, "2": { en: "middle", hi: "बीच का" }, "3": { en: "big", hi: "बड़ा" },
+};
+/** Words that rhyme (same ending sound). Every word has a picture in PIC. */
+export const RHYMES: string[][] = [
+  ["cat", "hat", "bat", "rat"], ["pen", "hen"], ["dog", "log"], ["box", "fox"], ["cap", "map"],
+  ["car", "star"], ["tree", "bee"], ["sock", "clock"], ["house", "mouse"],
+];
+Object.assign(PIC, { rat: "🐀", bee: "🐝", clock: "⏰", mouse: "🐭" });
+
 export const PAT_TOKENS = ["🔴", "🔵", "🟡", "🟢", "⭐", "🌸", "🪔", "🔺"];
 
 // ---------- items ----------
@@ -84,7 +109,8 @@ export type C1Item =
   | { kind: "pick"; skill: string; mode: PickMode; target: string; options: string[]; answer: string; seq?: string[] };
 
 export type PickMode = "more" | "less" | "position" | "shape" | "shape_obj" | "pattern" | "pattern_fix"
-  | "first_sound" | "letter_sound" | "letter_pick" | "read_word" | "build_word" | "vocab" | "sentence" | "sight";
+  | "first_sound" | "letter_sound" | "letter_pick" | "read_word" | "build_word" | "vocab" | "sentence" | "sight"
+  | "colour" | "size" | "num_match" | "num_next" | "rhyme" | "rhyme_odd";
 
 type Step = 1 | 2 | 3;
 
@@ -195,6 +221,47 @@ export function genClass1(skill: string, step: Step, rng: Rng): C1Item | null {
       const s = pick(rng, SENTENCES);
       return pickItem(skill, "sentence", s.s, s.pic, [s.pic, ...s.near], rng);
     }
+    case "colour_pick": {
+      const colours = shuffle(rng, [...COLOURS]).slice(0, step === 3 ? 4 : 3);
+      const thing = pick(rng, [...THINGS]);
+      const target = pick(rng, colours);
+      return pickItem(skill, "colour", target, target, colours, rng, [thing]);
+    }
+    case "size_compare": {
+      const pic = pick(rng, SIZE_PICS);
+      const big = rng() < 0.5;
+      const ranks = step === 1 ? ["1", "3"] : ["1", "2", "3"];
+      return pickItem(skill, "size", pic, big ? "3" : "1", ranks, rng, [big ? "big" : "small"]);
+    }
+    case "count_match": {
+      const n = step === 1 ? int(rng, 1, 5) : step === 2 ? int(rng, 3, 8) : int(rng, 6, 10);
+      const near = shuffle(rng, [n - 2, n - 1, n + 1, n + 2].filter(x => x >= 1 && x <= 10)).slice(0, 2);
+      return pickItem(skill, "num_match", "🦋", String(n), [n, ...near].map(String), rng);
+    }
+    case "num_next": {
+      const hi = step === 1 ? 6 : step === 2 ? 10 : 17;
+      const a = int(rng, 1, hi);
+      const ans = a + 3, shown = [a, a + 1, a + 2];
+      const near = shuffle(rng, [ans - 2, ans + 1, ans + 2, ans - 4].filter(x => x >= 1 && x <= 20 && !shown.includes(x))).slice(0, 2);
+      return pickItem(skill, "num_next", "", String(ans), [ans, ...near].map(String), rng, shown.map(String));
+    }
+    case "rhyme_pick": {
+      const fam = pick(rng, RHYMES);
+      const [target, right] = shuffle(rng, fam);
+      const others = RHYMES.filter(f => f !== fam).flat();
+      const sameStart = others.filter(w => w[0] === target[0]);
+      const rest = shuffle(rng, others.filter(w => w[0] !== target[0]));
+      const wrong = step === 1 || !sameStart.length ? rest.slice(0, 2) : [pick(rng, sameStart), rest[0]];
+      return pickItem(skill, "rhyme", target, right, [right, ...wrong], rng);
+    }
+    case "rhyme_odd": {
+      const fam = pick(rng, RHYMES.filter(f => f.length >= 2));
+      const [a, b] = shuffle(rng, fam);
+      const others = RHYMES.filter(f => f !== fam).flat();
+      const sameStart = others.filter(w => w[0] === a[0] || w[0] === b[0]);
+      const odd = step === 3 && sameStart.length ? pick(rng, sameStart) : pick(rng, others.filter(w => w[0] !== a[0] && w[0] !== b[0]));
+      return pickItem(skill, "rhyme_odd", "", odd, [a, b, odd], rng, [a, b]);
+    }
     case "sight": {
       const pool = step === 1 ? SIGHT.slice(0, 6) : SIGHT;
       const w = pick(rng, pool);
@@ -205,7 +272,9 @@ export function genClass1(skill: string, step: Step, rng: Rng): C1Item | null {
   return null;
 }
 
+const GARDEN_MODES = ["colour", "size", "num_match", "num_next", "rhyme", "rhyme_odd"];
 export const c1AnswerKey = (it: C1Item) =>
+  it.kind === "pick" && GARDEN_MODES.includes(it.mode) ? `${it.mode}:${it.target}:${it.answer}:${(it.seq ?? []).join(",")}` :
   it.kind === "count" ? `n${it.n}` : it.kind === "bond" ? `b${it.size}-${it.filled}` : it.kind === "arith1" ? `${it.a}${it.op}${it.b}` : `${it.mode}:${it.target}:${it.answer}`;
 
 export const c1Choices = (it: C1Item) => (it.kind === "pick" && it.mode !== "build_word" ? it.options.length : 0);
@@ -213,7 +282,7 @@ export const c1Choices = (it: C1Item) => (it.kind === "pick" && it.mode !== "bui
 // ---------- checking ----------
 
 export type C1Mistake = "chose_opposite" | "off_by_one" | "overfilled" | "wrong_op" | "end_sound" | "letter_reversal"
-  | "vowel_swap" | "letters_out_of_order" | "near_word" | "near_shape" | "miscount" | "wrong_pick";
+  | "vowel_swap" | "letters_out_of_order" | "near_word" | "near_shape" | "miscount" | "wrong_pick" | "same_start";
 
 export function checkClass1(it: C1Item, ans: { value?: number; pick?: string; word?: string }): { ok: boolean; mistake?: C1Mistake } {
   switch (it.kind) {
@@ -248,6 +317,7 @@ export function checkClass1(it: C1Item, ans: { value?: number; pick?: string; wo
       if (it.mode === "letter_pick" && ["bd", "db", "pq", "qp", "bp", "pb", "dp", "pd", "mn", "nm", "nu", "un"].includes(p + it.answer)) return { ok: false, mistake: "letter_reversal" };
       if (it.mode === "first_sound" && p.slice(-1) === it.target.slice(-1)) return { ok: false, mistake: "end_sound" };
       if (it.mode === "read_word") return { ok: false, mistake: "near_word" };
+      if (it.mode === "rhyme" && p[0] === it.target[0]) return { ok: false, mistake: "same_start" };
       if (it.mode === "shape" && ((p === "square" && it.answer === "rectangle") || (p === "rectangle" && it.answer === "square"))) return { ok: false, mistake: "near_shape" };
       return { ok: false, mistake: "wrong_pick" };
     }
@@ -267,6 +337,7 @@ export const C1_MISTAKE_TEXT: Record<C1Mistake, Record<Lang, string>> = {
   near_shape: { en: "Mixes up squares and rectangles", hi: "वर्ग और आयत में उलझते हैं" },
   miscount: { en: "Counting slip", hi: "गिनने में चूक" },
   wrong_pick: { en: "Chose a different answer", hi: "दूसरा जवाब चुना" },
+  same_start: { en: "Picks a word that starts the same instead of ending the same (rhyme)", hi: "आख़िर में एक जैसी आवाज़ की जगह एक जैसी शुरुआत वाला शब्द चुनते हैं (तुक)" },
 };
 
 // ---------- words for the child ----------
@@ -297,6 +368,12 @@ export function promptClass1(it: C1Item, lang: Lang): string {
       case "less": return T(lang, "Which basket has less?", "किस टोकरी में कम है?");
       case "position": return T(lang, `Where is the cat ${POS_WORD[it.answer as Pos].en} ${PLACE_WORD[it.target].en}? Tap that picture.`,
         `बिल्ली ${PLACE_WORD[it.target].hi} के ${POS_WORD[it.answer as Pos].hi} कहाँ है? वह तस्वीर छुओ।`);
+      case "colour": { const th = it.seq![0] as Thing; return T(lang, `Tap the ${COLOUR_WORD[it.target as Colour].en} ${THING_WORD[th].en}.`, `${COLOUR_WORD[it.target as Colour].hi} ${THING_WORD[th].hi} को छुओ।`); }
+      case "size": return it.seq![0] === "big" ? T(lang, "Tap the big one.", "बड़े वाले को छुओ।") : T(lang, "Tap the small one.", "छोटे वाले को छुओ।");
+      case "num_match": return T(lang, "How many butterflies? Tap the number.", "कितनी तितलियाँ हैं? संख्या छुओ।");
+      case "num_next": return T(lang, `Which number comes next? ${it.seq!.join(", ")}, ?`, `आगे कौन-सी संख्या आएगी? ${it.seq!.join(", ")}, ?`);
+      case "rhyme": return T(lang, `Which one rhymes with ${it.target}? Tap that picture.`, `${it.target} से किसकी तुक मिलती है? वह तस्वीर छुओ।`);
+      case "rhyme_odd": return T(lang, "Two of these rhyme. Which one is different?", "इनमें दो की तुक मिलती है। कौन-सा अलग है?");
       case "shape": return T(lang, `Tap the ${SHAPE_WORD[it.answer as Shape].en}.`, `${SHAPE_WORD[it.answer as Shape].hi} को छुओ।`);
       case "shape_obj": return T(lang, `Which one is shaped like a ${SHAPE_WORD[it.target as Shape].en}?`, `किसका आकार ${SHAPE_WORD[it.target as Shape].hi} जैसा है?`);
       case "pattern": return T(lang, "What comes next?", "आगे क्या आएगा?");
@@ -361,6 +438,36 @@ export function hintClass1(it: C1Item, level: number, lang: Lang): string {
         T(lang, "Find the part that repeats. Which one breaks it?", "दोहराने वाला हिस्सा ढूँढो। कौन उसे तोड़ता है?"),
         T(lang, "Check them one by one from the start.", "शुरू से एक-एक करके जाँचो।"),
         T(lang, `It is number ${Number(it.answer) + 1}.`, `यह नंबर ${Number(it.answer) + 1} है।`)][L - 1];
+      case "colour": { const w = COLOUR_WORD[it.target as Colour][lang], th = THING_WORD[it.seq![0] as Thing][lang]; return [
+        T(lang, "Look at all the colours.", "सब रंग देखो।"),
+        T(lang, `Look for the ${th} that is ${w}.`, `${w} रंग का ${th} ढूँढो।`),
+        T(lang, `Which one is ${w}?`, `कौन-सा ${w} है?`),
+        T(lang, `It is the ${w} one.`, `यह ${w} वाला है।`)][L - 1]; }
+      case "size": { const big = it.seq![0] === "big"; return [
+        T(lang, "Look at all of them.", "सबको देखो।"),
+        T(lang, "Which is the biggest? Which is the smallest?", "सबसे बड़ा कौन-सा है? सबसे छोटा कौन-सा?"),
+        big ? T(lang, "We want the biggest one.", "हमें सबसे बड़ा चाहिए।") : T(lang, "We want the smallest one.", "हमें सबसे छोटा चाहिए।"),
+        big ? T(lang, "It is the big one.", "यह बड़ा वाला है।") : T(lang, "It is the small one.", "यह छोटा वाला है।")][L - 1]; }
+      case "num_match": { const n = it.answer; return [
+        T(lang, "Touch each butterfly as you count.", "हर तितली को छूकर गिनो।"),
+        T(lang, "Count slowly: 1, 2, 3…", "धीरे-धीरे गिनो: 1, 2, 3…"),
+        T(lang, `Count them one by one up to ${n}.`, `एक-एक करके ${n} तक गिनो।`),
+        T(lang, `There are ${n}.`, `${n} हैं।`)][L - 1]; }
+      case "num_next": { const last = it.seq![2]; return [
+        T(lang, "Say the numbers out loud.", "संख्याएँ ज़ोर से बोलो।"),
+        T(lang, "Each number is one more than the one before.", "हर संख्या पिछली से एक ज़्यादा है।"),
+        T(lang, `${last} and one more is…`, `${last} और एक ज़्यादा…`),
+        T(lang, `Next comes ${it.answer}.`, `आगे ${it.answer} आएगा।`)][L - 1]; }
+      case "rhyme": return [
+        T(lang, "Listen to the end of the word.", "शब्द का आख़िरी हिस्सा सुनो।"),
+        T(lang, "Say each word. Which one ends the same?", "हर शब्द बोलो। कौन आख़िर में एक जैसा है?"),
+        T(lang, `${it.target} and ${it.answer} end with the same sound.`, `${it.target} और ${it.answer} की आख़िरी आवाज़ एक जैसी है।`),
+        T(lang, `It is ${it.answer}.`, `यह ${it.answer} है।`)][L - 1];
+      case "rhyme_odd": return [
+        T(lang, "Say all three words.", "तीनों शब्द बोलो।"),
+        T(lang, "Listen to the end of each word.", "हर शब्द का आख़िरी हिस्सा सुनो।"),
+        T(lang, `${it.seq![0]} and ${it.seq![1]} sound the same at the end.`, `${it.seq![0]} और ${it.seq![1]} आख़िर में एक जैसे सुनाई देते हैं।`),
+        T(lang, `It is ${it.answer}.`, `यह ${it.answer} है।`)][L - 1];
       case "first_sound": { const s = it.target.slice(0, 1); return [
         T(lang, `Say ${it.target} slowly. What do you hear first?`, `${it.target} धीरे बोलो। पहले क्या सुनाई देता है?`),
         T(lang, `Say each word: ${it.options.join(", ")}. Which starts the same?`, `हर शब्द बोलो: ${it.options.join(", ")}। कौन एक जैसा शुरू होता है?`),
@@ -417,6 +524,7 @@ export function feedbackClass1(m: C1Mistake | undefined, lang: Lang): string {
     case "letters_out_of_order": return T(lang, "Right letters! Now put them in order.", "अक्षर सही हैं! अब क्रम से लगाओ।");
     case "near_word": return T(lang, "Look at every letter, not just the first.", "हर अक्षर देखो, सिर्फ़ पहला नहीं।");
     case "near_shape": return T(lang, "Check: are all four sides the same length?", "देखो: क्या चारों भुजाएँ बराबर हैं?");
+    case "same_start": return T(lang, "That one starts the same. Rhymes sound the same at the end.", "वह शुरू में एक जैसा है। तुक आख़िर की आवाज़ से बनती है।");
     default: return T(lang, "Not yet. Try again.", "अभी नहीं। फिर कोशिश करो।");
   }
 }
@@ -427,6 +535,9 @@ export const HOME_C1: Record<string, Record<Lang, string>> = {
   laddoo: { en: "Use 10 spoons or pebbles. Hide some and ask: how many are hiding?", hi: "10 चम्मच या कंकड़ लें। कुछ छिपाएँ और पूछें: कितने छिपे हैं?" },
   cat: { en: "Play 'where is it?': put a toy on, under or behind the bed and ask your child to say where.", hi: "'कहाँ है?' खेलें: खिलौना पलंग के ऊपर, नीचे या पीछे रखें और बच्चे से पूछें।" },
   rangoli: { en: "Make a pattern with spoons and forks (spoon, fork, spoon, fork…) and ask what comes next.", hi: "चम्मच-काँटे से पैटर्न बनाएँ (चम्मच, काँटा, चम्मच…) और पूछें आगे क्या आएगा।" },
+  colours: { en: "Go on a colour hunt at home: find three red things, then three big things and three small things.", hi: "घर में रंग ढूँढो: तीन लाल चीज़ें, फिर तीन बड़ी और तीन छोटी चीज़ें।" },
+  butterfly: { en: "Count stairs, spoons or fruit together, then ask which number comes next.", hi: "सीढ़ियाँ, चम्मच या फल साथ गिनो, फिर पूछो कि आगे कौन-सी संख्या आएगी।" },
+  rhyme: { en: "Say a word like 'cat' and take turns finding words that sound the same at the end (hat, bat).", hi: "'cat' जैसा कोई शब्द बोलें और बारी-बारी आख़िर में एक जैसे सुनाई देने वाले शब्द ढूँढें (hat, bat)।" },
   sounds: { en: "Play 'I spy': say 'I spy something that starts with mmm' and find it together.", hi: "'मैं देख रहा हूँ' खेलें: 'मुझे mmm से शुरू होने वाली चीज़ दिख रही है' कहकर साथ ढूँढें।" },
   caps: { en: "Write cat, cap and cup on paper. Read them together, sound by sound.", hi: "कागज़ पर cat, cap, cup लिखें। साथ में एक-एक आवाज़ करके पढ़ें।" },
   listen: { en: "Read a page of the Mridang book together and point to the pictures as you say the words.", hi: "मृदंग किताब का एक पन्ना साथ पढ़ें और शब्द बोलते हुए तस्वीरों पर उँगली रखें।" },

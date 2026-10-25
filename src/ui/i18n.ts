@@ -17,6 +17,10 @@ export const S = {
   watchAgain: { en: "Watch again", hi: "देखो फिर से" },
   myTurn: { en: "My turn!", hi: "अब मेरी बारी!" },
   back: { en: "Back", hi: "वापस" },
+  home: { en: "Home", hi: "घर" },
+  leaveAsk: { en: "Leave the game? Your work is saved.", hi: "खेल छोड़ें? तुम्हारा काम सुरक्षित है।" },
+  stay: { en: "Keep playing", hi: "खेलते रहो" },
+  leave: { en: "Leave", hi: "बाहर जाओ" },
   check: { en: "Check", hi: "जाँचो" },
   del: { en: "Delete", hi: "मिटाओ" },
   ready: { en: "I'm ready", hi: "मैं तैयार हूँ" },
@@ -66,6 +70,7 @@ export const t = (k: Key, lang: Lang) => S[k][lang];
 export const HOME: Record<GameId, Record<Lang, string>> = {
   sabzi: HOME_C1.sabzi, laddoo: HOME_C1.laddoo, cat: HOME_C1.cat, rangoli: HOME_C1.rangoli,
   sounds: HOME_C1.sounds, caps: HOME_C1.caps, listen: HOME_C1.listen,
+  colours: HOME_C1.colours, butterfly: HOME_C1.butterfly, rhyme: HOME_C1.rhyme,
   beads: { en: "Make bundles of 10 with matchsticks or pencils. Ask a grown-up to say a number, and build it.",
            hi: "माचिस की तीलियों या पेंसिलों के 10-10 के बंडल बनाओ। बड़े कोई संख्या बोलें, तुम उसे बनाओ।" },
   stall: { en: "Play shop at home with real coins. Buy something for ₹27 with a ₹50 note and count the change.",

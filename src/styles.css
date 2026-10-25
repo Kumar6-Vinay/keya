@@ -288,3 +288,25 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
 .speech-notice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--hint-bg); color: var(--hint-ink); border: 1px solid var(--marigold); border-radius: 14px; padding: 8px 12px; font-size: 15px; margin-bottom: 8px; }
 .speech-notice span { flex: 1; min-width: 180px; }
 .demo-focus:disabled, .demo-answer:disabled { opacity: 1; }
+
+/* back and home */
+.topbar { gap: 8px; }
+.navbtns { display: flex; gap: 8px; flex: 1; }
+.navbtn { min-height: 48px; min-width: 48px; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); font-size: 16px; display: inline-flex; align-items: center; gap: 6px; }
+.leave-confirm { background: var(--hint-bg); border: 1px solid var(--marigold); border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+.leave-confirm p { margin: 0; }
+
+/* calm gardens: colours and sizes, butterflies, rhyme pond */
+.game.colours .choice { min-height: 124px; justify-content: center; }
+.game.colours.size .choice { min-height: 150px; }
+.game.colours .cap-word, .game.rhyme .cap-word { min-height: 1.3em; font-size: 16px; color: var(--muted); }
+.flowerbed { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; padding: 14px; border-radius: 22px; background: linear-gradient(#f1f8e8, #e4f1d6); min-height: 96px; }
+.bfly { position: relative; font-size: 40px; display: inline-block; animation: sway 5s ease-in-out infinite alternate; }
+.bfly small { position: absolute; right: -4px; bottom: -6px; font-size: 14px; background: #fff; border-radius: 999px; padding: 0 6px; color: var(--ink); border: 1px solid var(--line); }
+@keyframes sway { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-4px) rotate(3deg); } }
+@media (prefers-reduced-motion: reduce) { .bfly { animation: none; } }
+.numcard { font-family: var(--display); font-size: 46px; line-height: 1.1; }
+.numstep { display: inline-flex; align-items: center; gap: 4px; }
+.plus1 { color: var(--muted); font-size: 13px; }
+.game.butterfly .pattern { gap: 8px 14px; }
+.game.butterfly .pattern .slot { margin-left: 10px; }
