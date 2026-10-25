@@ -11,6 +11,7 @@ export interface Child {
   id: string; nickname: string; cls: Cls; lang: Lang; avatar: string;
   openClasses: number[];          // classes whose games this child can play (parent can open more)
   learner: Learner; sessions: SessionSummary[]; createdAt: string;
+  stickers: { id: string; day: string }[];   // collected for finishing a day's games; never removed
 }
 export interface Family {
   version: 1;
@@ -18,6 +19,8 @@ export interface Family {
   pinHash: string;
   tz: string;
   limitMin: number;
+  readable?: boolean;      // easy-read letters: a dyslexia-friendly typeface and wider spacing
+  bigText?: boolean;       // larger text everywhere
   children: Child[];
   syncedAt?: string;
 }
@@ -49,6 +52,7 @@ function migrate(f: Family): Family {
     c.openClasses ??= [c.cls];
     c.learner ??= emptyLearner();
     c.sessions ??= [];
+    c.stickers ??= [];
   }
   return f;
 }
@@ -74,7 +78,7 @@ export function newFamily(pinHash: string, tz: string): Family {
 }
 
 export function addChild(f: Family, nickname: string, cls: Cls, lang: Lang, avatar: string): Child {
-  const c: Child = { id: uid(), nickname: nickname.trim().slice(0, 16), cls, lang, avatar, openClasses: [cls], learner: emptyLearner(), sessions: [], createdAt: new Date().toISOString() };
+  const c: Child = { id: uid(), nickname: nickname.trim().slice(0, 16), cls, lang, avatar, openClasses: [cls], learner: emptyLearner(), sessions: [], stickers: [], createdAt: new Date().toISOString() };
   f.children.push(c);
   return c;
 }

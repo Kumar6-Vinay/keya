@@ -221,7 +221,7 @@ describe("calm garden games", () => {
 describe("saved data from before the new games", () => {
   /** A family saved by the previous version: only the older skills are known. */
   const old = (): Child => ({
-    id: "c1", nickname: "Riya", cls: 1, lang: "hi", avatar: "🦚", openClasses: [1], createdAt: "2026-10-01T00:00:00Z",
+    id: "c1", nickname: "Riya", cls: 1, lang: "hi", avatar: "🦚", openClasses: [1], createdAt: "2026-10-01T00:00:00Z", stickers: [],
     learner: { skills: { count10: { state: "mastered", p: 0.9, lastDay: "2026-10-20", reviewStep: 0, nextReview: "2026-10-22", masteredOn: "2026-10-20", workedInRow: 0 } }, misconceptions: {} },
     sessions: [{ id: "s1", date: "2026-10-20", game: "sabzi", minutes: 5, items: 6, alone: 4, grown: ["count10"], attempts: [{ skill: "count10", correct: true, hint: 0, phase: "practice" }] }],
   });

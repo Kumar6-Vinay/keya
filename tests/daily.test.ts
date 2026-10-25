@@ -6,7 +6,7 @@ import type { Child } from "../src/store";
 
 const DAY = "2026-10-25";
 const child = (over: Partial<Child> = {}): Child => ({
-  id: "c", nickname: "Riya", cls: 1, lang: "en", avatar: "🦚", openClasses: [1], learner: emptyLearner(), sessions: [], createdAt: DAY, ...over,
+  id: "c", nickname: "Riya", cls: 1, lang: "en", avatar: "🦚", openClasses: [1], learner: emptyLearner(), sessions: [], stickers: [], createdAt: DAY, ...over,
 });
 const session = (game: Child["sessions"][number]["game"], items = 5, date = DAY) => ({ id: `${game}${items}${date}`, date, game, minutes: 3, items, alone: items, grown: [], attempts: [] });
 const master = (c: Child, game: Parameters<typeof skillsFor>[0]) => skillsFor(game).forEach(s => {
@@ -78,5 +78,15 @@ describe("shareable report", () => {
   });
   it("says so when nothing was played", () => {
     expect(reportText(child(), weeklyReport(child(), DAY, "en"))).toContain("No games played this week.");
+  });
+});
+
+describe("saved data from before stickers", () => {
+  it("a family saved without stickers loads with an empty collection", async () => {
+    const store = new Map<string, string>();
+    (globalThis as unknown as { localStorage: Storage }).localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => void store.set(k, v), removeItem: k => void store.delete(k) } as Storage;
+    const { load } = await import("../src/store");
+    store.set("keya.family.v1", JSON.stringify({ version: 1, children: [{ id: "c", nickname: "R", cls: 1, lang: "en", avatar: "x" }] }));
+    expect(load()!.children[0].stickers).toEqual([]);
   });
 });
