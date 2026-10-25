@@ -81,6 +81,5 @@ Teaching rules that are enforced in code:
 - **Cloud backup** is written against Supabase's documented REST API, but it hasn't been tested against a live project.
 - **Classes 1, 4 and 5**, and the shapes, measurement, patterns and data games (release 2).
 - **Play Store** packaging; the pilot measures (pre-test and delayed test screens).
-- **Fonts** load from Google Fonts on first use. The offline build caches them after that.
 # keya
 # keya
