@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { dueReviews, today } from "./engine/learner";
 import { Cls, GameId, GAMES, Lang, skill as skillOf, SKILLS, skillsFor } from "./engine/skills";
-import { addChild, AVATARS, Child, Family, hashPin, load, newFamily, prune, save, upsertSession } from "./store";
+import { addChild, AVATARS, Child, Family, hashPin, load, newFamily, pinGate, prune, save, upsertSession } from "./store";
+import { DAILY_GOAL, gamesToday, goalMet, pickGame } from "./engine/daily";
 import { Keya } from "./ui/Keya";
 import { Play, PlayResult, PLACE_ICON } from "./ui/Play";
 import { Parent, PinPad } from "./ui/Parent";
@@ -102,7 +103,7 @@ export function App() {
   );
 
   if (screen.name === "pin")
-    return <div class="app">{top}<PinPad title={t("grownUp", lang)} onCancel={() => setScreen({ name: "who" })}
+    return <div class="app">{top}<PinPad title={t("grownUp", lang)} gate={pinGate} onCancel={() => setScreen({ name: "who" })}
       onPin={async pin => { if ((await hashPin(pin)) === family.pinHash) { setScreen({ name: "parent" }); return true; } return false; }} /></div>;
 
   if (screen.name === "parent")
@@ -153,7 +154,7 @@ export function App() {
 
   if (screen.name === "goodbye") {
     const { r, game } = screen;
-    const line = `${t("goodbyeSay", lang)} ${HOME[game][lang]}`;
+    const line = `${goalMet(child, today(family.tz)) ? t("goalDone", lang) + " " : ""}${t("goodbyeSay", lang)} ${HOME[game][lang]}`;
     return (
       <div class="app">{top}
         <div class="screen goodbye">
@@ -163,6 +164,7 @@ export function App() {
             <li>{t("todayYou", lang)}: <b>{r.alone}</b> {t("solvedAlone", lang)}</li>
             {r.grown.map(id => <li key={id}>{PLACE_ICON[id]} {skillOf(id).canDo[lang]}</li>)}
           </ul>
+          {goalMet(child, today(family.tz)) && <p class="goalnote">🌼🌼 {t("goalDone", lang)}</p>}
           <div class="homecard"><small>{t("homeChallenge", lang)}</small><p>{HOME[game][lang]}</p></div>
           <div class="row">
             <button class="soft" onClick={() => say(line, lang, true)}>🔊 {t("sayAgain", lang)}</button>
@@ -202,6 +204,15 @@ export function App() {
           <button class="ghost" onClick={() => { child.lang = lang === "hi" ? "en" : "hi"; persist(); }}>{lang === "hi" ? "English" : "हिंदी"}</button>
           <button class="ghost" onClick={() => setScreen({ name: "book" })}>📖 {t("skillBook", lang)}</button>
         </div>
+        <button class="playkeya" onClick={() => setScreen({ name: "play", game: pickGame(child, day) })}>
+          <Keya size={64} />
+          <span class="pk-text"><b>{goalMet(child, day) ? t("playMore", lang) : t("playKeya", lang)}</b>
+            <span class="goal" role="img" aria-label={`${t("goalLine", lang)}: ${Math.min(gamesToday(child, day), DAILY_GOAL)} / ${DAILY_GOAL}`}>
+              {Array.from({ length: DAILY_GOAL }, (_, i) => <span key={i} class={i < gamesToday(child, day) ? "on" : ""}>🌼</span>)}
+            </span>
+          </span>
+          <span class="pk-go" aria-hidden="true">▶</span>
+        </button>
         {due.length > 0 && (
           <button class="visitor" onClick={() => setScreen({ name: "play", game: skillOf(due[0]).game })}>
             <span aria-hidden="true">🧑‍🌾</span> {t("visitorSays", lang)}
@@ -209,7 +220,7 @@ export function App() {
         )}
         <Town child={child} lang={lang} onPick={g => setScreen({ name: "play", game: g })} />
       </div>
-      <SayOnce text={`${t("tagline", lang)}`} lang={lang} />
+      <SayOnce text={`${t("tagline", lang)}. ${t("playKeyaSay", lang)}`} lang={lang} />
     </div>
   );
 }
@@ -246,14 +257,17 @@ function Town({ child, lang, onPick }: { child: Child; lang: Lang; onPick: (g: G
                     const levels = skillsFor(g.id);
                     const grown = levels.filter(s => ["mastered", "secure"].includes(child.learner.skills[s.id]?.state ?? ""));
                     return (
-                      <button key={g.id} class={`district ${open ? "" : "closed"}`} style={{ background: DISTRICT[g.id].bg }} disabled={!open} onClick={() => open && onPick(g.id)}>
-                        <span class="dicon" aria-hidden="true">{DISTRICT[g.id].icon}</span>
-                        <b>{g.name[lang]}</b>
-                        <small>{g.blurb[lang]}</small>
-                        <span class="plots" aria-label={`${grown.length} of ${levels.length}`}>
-                          {levels.map(s => <span key={s.id} class={`plot ${grown.includes(s) ? "built" : ""}`}>{grown.includes(s) ? PLACE_ICON[s.id] : ""}</span>)}
-                        </span>
-                      </button>
+                      <div key={g.id} class="tilewrap">
+                        <button class={`district ${open ? "" : "closed"}`} style={{ background: DISTRICT[g.id].bg }} disabled={!open} onClick={() => open && onPick(g.id)}>
+                          <span class="dicon" aria-hidden="true">{DISTRICT[g.id].icon}</span>
+                          <b>{g.name[lang]}</b>
+                          <small>{g.blurb[lang]}</small>
+                          <span class="plots" aria-label={`${grown.length} of ${levels.length}`}>
+                            {levels.map(s => <span key={s.id} class={`plot ${grown.includes(s) ? "built" : ""}`}>{grown.includes(s) ? PLACE_ICON[s.id] : ""}</span>)}
+                          </span>
+                        </button>
+                        <button class="tilesay" aria-label={`${t("hearIt", lang)}: ${g.name[lang]}`} onClick={() => say(`${g.name[lang]}. ${g.blurb[lang]}`, lang, true)}>🔊</button>
+                      </div>
                     );
                   })}
                 </div>
