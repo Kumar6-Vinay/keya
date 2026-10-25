@@ -330,3 +330,17 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
   .town { grid-template-columns: repeat(3, 1fr); }
   .screen.play, .screen.goodbye, .screen.grow, .screen.break, .screen.pin { max-width: 640px; margin-left: auto; margin-right: auto; width: 100%; }
 }
+
+/* The town: places appear on the street as skills are mastered */
+.townview { position: relative; border-radius: 22px; overflow: hidden; background: linear-gradient(#cfeaf9, #eaf6fb 70%); padding: 6px 10px 0; }
+.sky { position: absolute; inset: 0 0 auto 0; height: 60px; pointer-events: none; }
+.sun { position: absolute; right: 12px; top: 6px; font-size: 30px; }
+.cloud { position: absolute; font-size: 28px; opacity: .85; } .c1 { left: 40%; top: 4px; opacity: .6; } .c2 { left: 68%; top: 14px; font-size: 22px; opacity: .5; }
+.street { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px 4px; min-height: 96px; padding-top: 34px; justify-content: center; }
+.place { background: transparent; border: 0; width: 52px; height: 52px; font-size: 36px; display: grid; place-items: center; border-radius: 14px; }
+.place.up { transform: translateY(-8px); }
+.place.newest { background: rgba(255,255,255,.7); box-shadow: 0 0 0 3px var(--marigold); }
+.emptytown { margin: 14px 0 0; font-family: var(--display); font-size: 20px; color: var(--muted); }
+.ground { height: 14px; margin: 0 -10px; background: #8fcf8a; border-top: 3px solid #6bb36a; }
+.townscore { position: absolute; left: 10px; top: 6px; margin: 0; font-family: var(--display); font-size: 16px; background: rgba(255,255,255,.8); border-radius: 999px; padding: 2px 10px; }
+@media (prefers-reduced-motion: no-preference) { .place.newest { animation: rise .6s ease-out; } }

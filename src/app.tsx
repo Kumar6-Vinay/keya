@@ -4,6 +4,7 @@ import { Cls, GameId, GAMES, Lang, skill as skillOf, SKILLS, skillsFor } from ".
 import { addChild, AVATARS, Child, Family, hashPin, load, newFamily, pinGate, prune, save, upsertSession } from "./store";
 import { DAILY_GOAL, gamesToday, goalMet, pickGame } from "./engine/daily";
 import { Keya } from "./ui/Keya";
+import { TownView } from "./ui/TownView";
 import { Play, PlayResult, PLACE_ICON } from "./ui/Play";
 import { Parent, PinPad } from "./ui/Parent";
 import { HOME, t } from "./ui/i18n";
@@ -213,6 +214,7 @@ export function App() {
           </span>
           <span class="pk-go" aria-hidden="true">▶</span>
         </button>
+        <TownView child={child} lang={lang} />
         {due.length > 0 && (
           <button class="visitor" onClick={() => setScreen({ name: "play", game: skillOf(due[0]).game })}>
             <span aria-hidden="true">🧑‍🌾</span> {t("visitorSays", lang)}

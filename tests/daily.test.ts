@@ -1,7 +1,7 @@
 import { DAILY_GOAL, gamesToday, goalMet, pickGame } from "../src/engine/daily";
 import { emptyLearner, rec } from "../src/engine/learner";
 import { GAMES, skillsFor } from "../src/engine/skills";
-import { lockMs, PIN_FREE_TRIES } from "../src/store";
+import { lockMs, PIN_FREE_TRIES, reportText, weeklyReport } from "../src/store";
 import type { Child } from "../src/store";
 
 const DAY = "2026-10-25";
@@ -61,5 +61,22 @@ describe("PIN lock", () => {
     expect(lockMs(PIN_FREE_TRIES)).toBe(30_000);
     expect(lockMs(PIN_FREE_TRIES + 1)).toBe(60_000);
     expect(lockMs(50)).toBe(15 * 60_000);
+  });
+});
+
+describe("shareable report", () => {
+  it("is plain text with the week's numbers, new skills and a home activity, and nothing about the PIN or other children", () => {
+    const c = child({ sessions: [{ ...session("sabzi", 6), grown: ["count10"], minutes: 9, alone: 5 }] });
+    rec(c.learner, "count10").state = "mastered";
+    const r = weeklyReport(c, DAY, "en");
+    const text = reportText(c, r);
+    expect(text).toContain("Riya's week");
+    expect(text).toContain("Played 9 min in 1 game, 83% done alone");
+    expect(text).toContain("Counting to 10");
+    expect(text).toContain("Try at home:");
+    expect(text).not.toMatch(/pin/i);
+  });
+  it("says so when nothing was played", () => {
+    expect(reportText(child(), weeklyReport(child(), DAY, "en"))).toContain("No games played this week.");
   });
 });

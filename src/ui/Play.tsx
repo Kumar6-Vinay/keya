@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { Session, Turn } from "../engine/session";
-import { AnswerSet, hint as hintText, Mistake, mistakeFeedback, nextItem, prompt } from "../engine/items";
+import { AnswerSet, explain, hint as hintText, Mistake, mistakeFeedback, nextItem, prompt } from "../engine/items";
 import { rec, today } from "../engine/learner";
 import { makeRng } from "../engine/rng";
 import { GameId, GAMES, Lang, skill as skillOf } from "../engine/skills";
@@ -51,6 +51,14 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
   const [locked, setLocked] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [mode, setMode] = useState<Mode>("play");
+  const [after, setAfterRaw] = useState<{ go: () => void } | null>(null);   // a right answer is on screen; go() moves on
+  const afterTimer = useRef(0);
+  const setAfter = (a: { go: () => void } | null) => {
+    clearTimeout(afterTimer.current);
+    setAfterRaw(a);
+    if (a) afterTimer.current = window.setTimeout(() => { setAfterRaw(null); a.go(); }, 2400 + Math.min(4000, 45 * (msgLen.current)));
+  };
+  const msgLen = useRef(0);
   const [grewSkill, setGrewSkill] = useState<string | null>(null);
   const demoed = useRef(new Set<string>());
   const [demo, setDemo] = useState<{ item: Item; step: 0 | 1 | 2; script: DemoStep[] } | null>(null);
@@ -75,7 +83,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
   // New item: maybe a demo first (new skill), then the spoken prompt.
   useEffect(() => {
     if (turn.phase === "done") { onEnd(result()); return; }
-    setHintLv(turn.hint); setReveal(false); setLocked(false);
+    setHintLv(turn.hint); setReveal(false); setLocked(false); setAfter(null);
     const isNew = rec(child.learner, turn.skill).state === "not_started" && !session.log.some(l => l.skill === turn.skill);
     if (turn.phase === "practice" && isNew && !demoed.current.has(turn.skill)) {
       demoed.current.add(turn.skill);
@@ -108,6 +116,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
   };
 
   const nextTurn = () => { setMsg(null); setTurn({ ...session.current() }); };
+  useEffect(() => () => clearTimeout(afterTimer.current), []);
 
   const onAnswer = (ok: boolean, mistake?: Mistake) => {
     const o = session.submit(ok, mistake);
@@ -115,13 +124,15 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
     onSave(result());
     if (ok) {
       chime("good");
-      const text = turn.hint >= 2 || turn.wrongs > 0 ? t("gotThere", lang) : t("rightStrategy", lang);
-      setMsg({ text, tone: "good" }); say(text, lang); setLocked(true);
-      setTimeout(() => {
+      const text = `${turn.hint >= 2 || turn.wrongs > 0 ? t("gotThere", lang) : t("rightStrategy", lang)} ${explain(turn.item, lang)}`;
+      setMsg({ text, tone: "good" }); say(text, lang); setLocked(true); msgLen.current = text.length;
+      // Long enough to read the reason; the Next button below lets a quick child go on sooner.
+      const go = () => {
         if (o.grew) { setGrewSkill(o.grew); setMode("grew"); chime("grow"); return; }
         if (o.stepChanged) say(t(o.stepChanged === "easier" ? "easier" : "harder", lang), lang);
         nextTurn();
-      }, 1400);
+      };
+      setAfter({ go });
       return;
     }
     if (!o.moveOn) {
@@ -133,7 +144,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
     }
     // Item finished without success: show how it goes, then move on (never "game over").
     setReveal(true); setLocked(true);
-    const text = o.checkFailed ? t("checkMissed", lang) : t("showIt", lang);
+    const text = `${o.checkFailed ? t("checkMissed", lang) : t("showIt", lang)} ${explain(turn.item, lang)}`;
     setMsg({ text, tone: "neutral" }); say(text, lang);
   };
 
@@ -209,6 +220,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
         <button class="soft" onClick={() => msg && say(msg.text, lang, true)}>🔊 {t("sayAgain", lang)}</button>
         {turn.canHelp && !reveal && <button class="soft" disabled={locked} onClick={askHelp}>💡 {t("help", lang)}</button>}
         {reveal && <button class="primary" onClick={nextTurn}>{t("next", lang)}</button>}
+        {after && <button class="primary" onClick={() => { const a = after; setAfter(null); a.go(); }}>{t("next", lang)}</button>}
         <button class="soft" onClick={() => { onSave(result()); onBreak(); }}>⏸ {t("pause", lang)}</button>
       </div>
     </div>
