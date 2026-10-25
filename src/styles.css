@@ -35,7 +35,7 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
 .primary { background: var(--terracotta); color: #fff; border: 0; border-radius: 999px; padding: 12px 26px; font-family: var(--display); font-weight: 700; font-size: 20px; min-height: 52px; box-shadow: 0 4px 0 #a8432a; }
 .primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #a8432a; }
 .soft { background: #f6ead6; border: 0; border-radius: 999px; padding: 10px 16px; min-height: 48px; font-size: 17px; }
-.ghost { background: transparent; border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 12px; min-height: 40px; font-size: 15px; }
+.ghost { background: transparent; border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 14px; min-height: 48px; min-width: 48px; font-size: 16px; }
 .link { background: none; border: 0; color: var(--indigo); text-decoration: underline; padding: 6px 4px; font-size: 15px; }
 .danger-link { color: #a3311b; }
 .danger { background: #fde8e3; border-radius: 12px; padding: 12px; font-size: 15px; }
@@ -310,3 +310,23 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
 .plus1 { color: var(--muted); font-size: 13px; }
 .game.butterfly .pattern { gap: 8px 14px; }
 .game.butterfly .pattern .slot { margin-left: 10px; }
+
+/* Play with Keya: one big button so a child who cannot read yet always has a first step */
+.playkeya { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; border-radius: 24px; padding: 10px 16px; min-height: 92px; text-align: left; background: var(--terracotta); color: #fff; box-shadow: 0 5px 0 #a8432a; }
+.playkeya .tara { flex: none; }
+.pk-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.pk-text b { font-family: var(--display); font-size: 24px; line-height: 1.1; }
+.goal { display: flex; gap: 4px; font-size: 22px; }
+.goal span { filter: grayscale(1) opacity(.45); } .goal span.on { filter: none; }
+.pk-go { font-size: 30px; }
+.goalnote { margin: 0; font-family: var(--display); font-size: 20px; color: var(--good-ink); background: var(--good-bg); border-radius: 14px; padding: 8px 12px; text-align: center; }
+/* a speaker on each tile reads the title and blurb aloud for children who cannot read yet */
+.tilewrap { position: relative; display: flex; }
+.tilewrap .district { flex: 1; }
+.tilesay { position: absolute; top: 6px; right: 6px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: rgba(255,255,255,.8); font-size: 22px; display: grid; place-items: center; }
+/* tablets and wide screens: use the room */
+@media (min-width: 720px) {
+  .app { max-width: 920px; }
+  .town { grid-template-columns: repeat(3, 1fr); }
+  .screen.play, .screen.goodbye, .screen.grow, .screen.break, .screen.pin { max-width: 640px; margin-left: auto; margin-right: auto; width: 100%; }
+}

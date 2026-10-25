@@ -1,5 +1,13 @@
 import { render } from "preact";
 import { App } from "./app";
+import "@fontsource/baloo-2/latin-600.css";
+import "@fontsource/baloo-2/latin-700.css";
+import "@fontsource/baloo-2/devanagari-600.css";
+import "@fontsource/baloo-2/devanagari-700.css";
+import "@fontsource/mukta/latin-400.css";
+import "@fontsource/mukta/latin-700.css";
+import "@fontsource/mukta/devanagari-400.css";
+import "@fontsource/mukta/devanagari-700.css";
 import "./styles.css";
 
 render(<App />, document.getElementById("root")!);

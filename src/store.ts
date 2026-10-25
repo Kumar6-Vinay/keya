@@ -131,3 +131,22 @@ export function exportJson(f: Family): string {
   void _omit;
   return JSON.stringify(rest, null, 2);
 }
+
+// ---------- grown-up PIN: slow down guessing ----------
+
+const PIN_KEY = "keya.pin.v1";
+export const PIN_FREE_TRIES = 3;
+/** How long the PIN pad stays shut after this many wrong tries in a row: 30 s, then doubling, up to 15 minutes. */
+export function lockMs(fails: number): number {
+  return fails < PIN_FREE_TRIES ? 0 : Math.min(15 * 60_000, 30_000 * 2 ** (fails - PIN_FREE_TRIES));
+}
+const readPin = (): { fails: number; until: number } => {
+  try { return { fails: 0, until: 0, ...JSON.parse(localStorage.getItem(PIN_KEY) ?? "{}") }; } catch { return { fails: 0, until: 0 }; }
+};
+const writePin = (v: { fails: number; until: number }) => { try { localStorage.setItem(PIN_KEY, JSON.stringify(v)); } catch { /* ignore */ } };
+export const pinGate = {
+  /** Milliseconds until the pad opens again; 0 when it is open. */
+  remaining: (now = Date.now()) => Math.max(0, readPin().until - now),
+  fail: (now = Date.now()) => { const fails = readPin().fails + 1; writePin({ fails, until: now + lockMs(fails) }); },
+  ok: () => writePin({ fails: 0, until: 0 }),
+};

@@ -8,23 +8,36 @@ import { CloudBackup } from "./Cloud";
 import { testVoice, voiceStatus } from "./voice";
 import { useEffect } from "preact/hooks";
 
-/** 4-digit PIN entry. onPin returns false to show "try again". */
-export function PinPad({ title, onPin, onCancel }: { title: string; onPin: (pin: string) => Promise<boolean>; onCancel?: () => void }) {
+export interface PinGate { remaining: () => number; fail: () => void; ok: () => void }
+
+/** 4-digit PIN entry. onPin returns false to show "try again"; a gate slows down repeated wrong tries. */
+export function PinPad({ title, onPin, onCancel, gate }: { title: string; onPin: (pin: string) => Promise<boolean>; onCancel?: () => void; gate?: PinGate }) {
   const [pin, setPin] = useState("");
   const [bad, setBad] = useState(false);
+  const [wait, setWait] = useState(() => gate?.remaining() ?? 0);
+  useEffect(() => {
+    if (!wait) return;
+    const id = setInterval(() => setWait(gate!.remaining()), 500);
+    return () => clearInterval(id);
+  }, [wait > 0]);
   const press = async (k: string) => {
+    if (wait > 0) return;
     if (k === "del") { setPin(p => p.slice(0, -1)); return; }
     const next = (pin + k).slice(0, 4);
     setPin(next); setBad(false);
-    if (next.length === 4) { const ok = await onPin(next); setPin(""); if (!ok) setBad(true); }
+    if (next.length === 4) {
+      const ok = await onPin(next); setPin("");
+      if (ok) gate?.ok(); else { gate?.fail(); setBad(true); setWait(gate?.remaining() ?? 0); }
+    }
   };
   return (
     <div class="screen pin">
       <h2>{title}</h2>
       <div class="dots" aria-label={`${pin.length} of 4`}>{[0, 1, 2, 3].map(i => <span key={i} class={i < pin.length ? "on" : ""} />)}</div>
-      {bad && <p class="err">That didn't match. Try again. · मेल नहीं खाया, फिर कोशिश करें।</p>}
+      {wait > 0 && <p class="err" role="alert">Too many tries. Wait {Math.ceil(wait / 1000)} s · बहुत कोशिशें हो गईं। {Math.ceil(wait / 1000)} सेकंड रुकें।</p>}
+      {bad && wait === 0 && <p class="err">That didn't match. Try again. · मेल नहीं खाया, फिर कोशिश करें।</p>}
       <div class="keys pinkeys">
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0"].map(k => <button key={k} class={k === "del" ? "key soft" : "key"} onClick={() => press(k)} aria-label={k === "del" ? "delete" : k}>{k === "del" ? "⌫" : k}</button>)}
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0"].map(k => <button key={k} disabled={wait > 0} class={k === "del" ? "key soft" : "key"} onClick={() => press(k)} aria-label={k === "del" ? "delete" : k}>{k === "del" ? "⌫" : k}</button>)}
         {onCancel && <button class="key soft" onClick={onCancel}>✕</button>}
       </div>
     </div>

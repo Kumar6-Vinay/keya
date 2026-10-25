@@ -1,5 +1,5 @@
 // Keya service worker: cache the app so it opens and plays without data.
-const CACHE = "keya-v1";
+const CACHE = "keya-v2";
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(["./", "index.html", "manifest.webmanifest", "icon.svg"])).then(() => self.skipWaiting()));
 });
@@ -12,7 +12,7 @@ self.addEventListener("fetch", e => {
   e.respondWith(
     caches.match(e.request).then(hit => {
       const net = fetch(e.request).then(res => {
-        if (res.ok && (url.origin === location.origin || url.hostname.endsWith("gstatic.com") || url.hostname.endsWith("googleapis.com"))) {
+        if (res.ok && url.origin === location.origin) {
           const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
