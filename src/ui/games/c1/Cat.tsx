@@ -1,7 +1,7 @@
 import { check } from "../../../engine/items";
-import { Pos, Shape, SHAPE_WORD } from "../../../engine/class1";
+import { Pos, POS_WORD, Shape, SHAPE_WORD } from "../../../engine/class1";
 import type { GameProps } from "../types";
-import { Choice } from "./common";
+import { answer, Choice, focus } from "./common";
 
 /** A small scene: a table, box or basket, with the cat at one position. */
 function Scene({ place, pos }: { place: string; pos: Pos }) {
@@ -44,19 +44,22 @@ function ShapeSvg({ s, i }: { s: Shape; i: number }) {
 }
 
 /** Find the Furry Cat: position words, naming shapes, shapes around us. */
-export function Cat({ item, hint, lang, reveal, locked, onAnswer }: GameProps) {
+export function Cat({ item, hint, lang, reveal, locked, demo, onAnswer }: GameProps) {
   if (item.kind !== "pick") return null;
   const pick = (o: string) => { const c = check(item, { pick: o }); onAnswer(c.ok, c.mistake); };
   const show = (o: string) => (reveal || hint >= 4) && o === item.answer;
+  const mark = (o: string) => `${focus(demo)} ${answer(demo, o === item.answer)}`;
   if (item.mode === "position")
-    return <div class="game cat choices3">{item.options.map(o => <Choice key={o} disabled={locked || reveal} right={show(o)} onPick={() => pick(o)} label={o}><Scene place={item.target} pos={o as Pos} /></Choice>)}</div>;
+    return <div class="game cat choices3">{item.options.map(o => (
+      <Choice key={o} disabled={locked || reveal} right={show(o)} mark={mark(o)} onPick={() => pick(o)} label={o}>
+        <Scene place={item.target} pos={o as Pos} />{demo !== undefined && demo > 0 && <small>{POS_WORD[o as Pos][lang]}</small>}</Choice>))}</div>;
   if (item.mode === "shape")
     return <div class="game cat choices4">{item.options.map((o, i) => (
-      <Choice key={o} disabled={locked || reveal} right={show(o)} onPick={() => pick(o)} label="shape"><ShapeSvg s={o as Shape} i={i} />{hint >= 3 && <small>{SHAPE_WORD[o as Shape][lang]}</small>}</Choice>))}</div>;
+      <Choice key={o} disabled={locked || reveal} right={show(o)} mark={mark(o)} onPick={() => pick(o)} label="shape"><ShapeSvg s={o as Shape} i={i} />{hint >= 3 && <small>{SHAPE_WORD[o as Shape][lang]}</small>}</Choice>))}</div>;
   if (item.mode === "shape_obj")
     return <div class="game cat choices3">
-      {hint >= 2 && <div class="shapehint"><ShapeSvg s={item.target as Shape} i={0} /></div>}
-      {item.options.map(o => <Choice key={o} disabled={locked || reveal} right={show(o)} onPick={() => pick(o)} label="object"><span class="pic" style={{ fontSize: "56px" }}>{o}</span></Choice>)}
+      {hint >= 2 && <div class={`shapehint ${focus(demo)}`}><ShapeSvg s={item.target as Shape} i={0} /></div>}
+      {item.options.map(o => <Choice key={o} disabled={locked || reveal} right={show(o)} mark={mark(o)} onPick={() => pick(o)} label="object"><span class="pic" style={{ fontSize: "56px" }}>{o}</span></Choice>)}
     </div>;
   return null;
 }

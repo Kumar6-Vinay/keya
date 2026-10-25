@@ -7,6 +7,7 @@ import { Play, PlayResult, PLACE_ICON } from "./ui/Play";
 import { Parent, PinPad } from "./ui/Parent";
 import { HOME, t } from "./ui/i18n";
 import { say, setVoice, stop, voiceOn } from "./ui/voice";
+import { SpeechNotice } from "./ui/SpeechNotice";
 
 type Screen =
   | { name: "setup" }
@@ -36,10 +37,13 @@ export function App() {
     return <Setup onDone={f => { save(f); setFamily(f); setScreen({ name: "who" }); }} />;
 
   const top = (
-    <header class="topbar">
-      <span class="brand">{t("appName", lang)}</span>
-      <button class="ghost" aria-pressed={voice} onClick={() => { setVoice(!voice); setVoiceState(!voice); }}>{voice ? "🔊" : "🔇"}</button>
-    </header>
+    <>
+      <header class="topbar">
+        <span class="brand">{t("appName", lang)}</span>
+        <button class="ghost" aria-pressed={voice} aria-label="sound" onClick={() => { setVoice(!voice); setVoiceState(!voice); }}>{voice ? "🔊" : "🔇"}</button>
+      </header>
+      <SpeechNotice lang={lang} />
+    </>
   );
 
   if (screen.name === "pin")

@@ -3,6 +3,7 @@ import { check, foodLabel } from "../../engine/items";
 import { chime } from "../voice";
 import { t } from "../i18n";
 import type { GameProps } from "./types";
+import { answer, focus } from "./c1/common";
 
 const SWEET: Record<string, string> = { laddoo: "#f3a712", jalebi: "#f28c28", barfi: "#e9e2d0", peda: "#d9b38c" };
 const Sweet = ({ food }: { food: string }) => (
@@ -21,7 +22,7 @@ function Slab({ cuts, food }: { cuts: number[]; food: string }) {
 }
 
 /** G5 Fair Share: deal sweets onto plates; spot halves and quarters. */
-export function Share({ item, hint, lang, reveal, locked, onAnswer }: GameProps) {
+export function Share({ item, hint, lang, reveal, locked, demo, onAnswer }: GameProps) {
   const n = item.kind === "share" ? item.plates : 0;
   const [plates, setPlates] = useState<number[]>(Array(n).fill(0));
   const [box, setBox] = useState(0);
@@ -29,7 +30,7 @@ export function Share({ item, hint, lang, reveal, locked, onAnswer }: GameProps)
 
   if (item.kind === "share") {
     const each = Math.floor(item.total / item.plates), rest = item.total % item.plates;
-    const shown = reveal ? Array(item.plates).fill(each) : plates;
+    const shown = reveal ? Array(item.plates).fill(each) : demo === 1 ? Array(item.plates).fill(1) : plates;   // demo step 1: one to each plate
     const boxShown = reveal ? rest : box;
     const pile = item.total - shown.reduce((a, b) => a + b, 0) - boxShown;
     const minPlate = Math.min(...plates), nextPlate = plates.findIndex(p => p === minPlate);
@@ -41,7 +42,7 @@ export function Share({ item, hint, lang, reveal, locked, onAnswer }: GameProps)
           <div class="sweets">{Array.from({ length: pile }, (_, k) => <Sweet key={k} food={item.food} />)}</div>
           <small>{pile > 0 ? t("pile", lang) : ""}</small>
         </div>
-        <div class="plates">
+        <div class={`plates ${focus(demo)} ${answer(demo)}`}>
           {shown.map((p, i) => (
             <div key={i} class={`plate ${hint >= 2 && !reveal && i === nextPlate && pile > 0 ? "next" : ""}`}>
               <button class="platebtn" aria-label={`plate ${i + 1}: ${p}`} disabled={locked || reveal} onClick={() => give(i)}>
@@ -52,7 +53,7 @@ export function Share({ item, hint, lang, reveal, locked, onAnswer }: GameProps)
           ))}
         </div>
         {item.skill === "share_left" && (
-          <div class="leftbox">
+          <div class={`leftbox ${answer(demo, item.total % item.plates > 0)}`}>
             <span>{t("leftBox", lang)}: <b>{boxShown}</b></span>
             {!reveal && <><button class="mini" disabled={locked || pile <= 0} onClick={() => setBox(b => b + 1)}>+</button>
               <button class="mini" disabled={locked || box <= 0} onClick={() => setBox(b => b - 1)}>−</button></>}
@@ -68,7 +69,7 @@ export function Share({ item, hint, lang, reveal, locked, onAnswer }: GameProps)
     return (
       <div class="game share fractions">
         {item.options.map(o => (
-          <button key={o.id} class={`choice ${reveal && o.id === "even" ? "right" : ""}`} disabled={locked || reveal}
+          <button key={o.id} class={`choice ${reveal && o.id === "even" ? "right" : ""} ${focus(demo)} ${answer(demo, o.id === "even")}`} disabled={locked || reveal}
             onClick={() => { const c = check(item, { pick: o.id }); onAnswer(c.ok, c.mistake); }}>
             <Slab cuts={o.cuts} food={item.food} />
             {hint >= 2 && <small>{o.cuts.length + 1} {lang === "hi" ? "टुकड़े" : "pieces"}</small>}

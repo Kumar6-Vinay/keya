@@ -2,13 +2,14 @@ import { check, toyLabel } from "../../engine/items";
 import { Keypad } from "../kit";
 import { t } from "../i18n";
 import type { GameProps } from "./types";
+import { answer, focus } from "./c1/common";
 
 const TOY_ICON: Record<string, string> = { kite: "🪁", top: "🪀", drum: "🥁", doll: "🪆", ball: "⚽", whistle: "📯", car: "🚗", flute: "🎶" };
 
-function Money({ amount }: { amount: number }) {
+function Money({ amount, mark = "" }: { amount: number; mark?: string }) {
   const notes = Math.floor(amount / 10), coins = amount % 10;
   return (
-    <div class="money" role="img" aria-label={`${notes} ten-rupee notes and ${coins} one-rupee coins`}>
+    <div class={`money ${mark}`} role="img" aria-label={`${notes} ten-rupee notes and ${coins} one-rupee coins`}>
       {Array.from({ length: notes }, (_, k) => <span key={`n${k}`} class="note">₹10</span>)}
       {Array.from({ length: coins }, (_, k) => <span key={`c${k}`} class="coin">₹1</span>)}
     </div>
@@ -32,7 +33,7 @@ function JumpLine({ from, to }: { from: number; to: number }) {
 }
 
 /** G4 Fair Stall: add prices and give change at the mela. */
-export function Stall({ item, hint, lang, reveal, locked, onAnswer }: GameProps) {
+export function Stall({ item, hint, lang, reveal, locked, demo, onAnswer }: GameProps) {
   if (item.kind === "money_add") {
     const total = item.prices[0] + item.prices[1];
     return (
@@ -41,10 +42,10 @@ export function Stall({ item, hint, lang, reveal, locked, onAnswer }: GameProps)
           {item.toys.map((toy, i) => (
             <div class="toy" key={toy}><span class="icon" aria-hidden="true">{TOY_ICON[toy] ?? "🎁"}</span>
               <span class="label">{toyLabel(toy, lang)}</span><span class="price">₹{item.prices[i]}</span>
-              {hint >= 2 && <Money amount={item.prices[i]} />}</div>
+              {hint >= 2 && <Money amount={item.prices[i]} mark={focus(demo)} />}</div>
           ))}
         </div>
-        {reveal ? <div class="answer big">₹{total}</div>
+        {reveal ? <div class={`answer big ${answer(demo)}`}>₹{total}</div>
           : <Keypad maxLen={2} prefix={`${t("total", lang)}: ₹`} lang={lang} disabled={locked}
               onSubmit={v => { const c = check(item, { value: v }); onAnswer(c.ok, c.mistake); }} />}
       </div>
@@ -58,8 +59,8 @@ export function Stall({ item, hint, lang, reveal, locked, onAnswer }: GameProps)
             <span class="label">{toyLabel(item.toy, lang)}</span><span class="price">₹{item.price}</span></div>
           <div class="paid"><span class="bignote">₹{item.paid}</span><small>{lang === "hi" ? "ग्राहक ने दिए" : "customer pays"}</small></div>
         </div>
-        {hint >= 2 && <JumpLine from={item.price} to={item.paid} />}
-        {reveal ? <div class="answer big">₹{item.paid - item.price}</div>
+        {hint >= 2 && <div class={focus(demo)}><JumpLine from={item.price} to={item.paid} /></div>}
+        {reveal ? <div class={`answer big ${answer(demo)}`}>₹{item.paid - item.price}</div>
           : <Keypad maxLen={2} prefix={`${t("change", lang)}: ₹`} lang={lang} disabled={locked}
               onSubmit={v => { const c = check(item, { value: v }); onAnswer(c.ok, c.mistake); }} />}
       </div>

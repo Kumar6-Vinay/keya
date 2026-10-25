@@ -2,13 +2,17 @@ import type { ComponentChildren } from "preact";
 import { say } from "../../voice";
 
 /** A big tappable choice card. `right` marks the answer when revealed or at hint level 4. */
-export function Choice({ onPick, disabled, right, children, label }: {
-  onPick: () => void; disabled: boolean; right?: boolean; children: ComponentChildren; label?: string;
+export function Choice({ onPick, disabled, right, children, label, mark }: {
+  onPick: () => void; disabled: boolean; right?: boolean; children: ComponentChildren; label?: string; mark?: string;
 }) {
   return (
-    <button class={`choice c1 ${right ? "right" : ""}`} disabled={disabled} onClick={onPick} aria-label={label}>{children}</button>
+    <button class={`choice c1 ${right ? "right" : ""} ${mark ?? ""}`} disabled={disabled} onClick={onPick} aria-label={label}>{children}</button>
   );
 }
+
+/** Demo rings: step 1 rings what to look at; step 2 rings the answer. Empty outside the demo. */
+export const focus = (demo?: number) => (demo === 1 ? "demo-focus" : "");
+export const answer = (demo: number | undefined, isAnswer = true) => (demo === 2 && isAnswer ? "demo-answer" : "");
 
 /** Small speaker that says an English word without choosing it. */
 export function Hear({ word }: { word: string }) {
