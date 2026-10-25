@@ -14,6 +14,7 @@ export const S = {
   pause: { en: "Pause", hi: "रुको" },
   done: { en: "Done", hi: "हो गया" },
   next: { en: "Next", hi: "आगे" },
+  watchAgain: { en: "Watch again", hi: "देखो फिर से" },
   myTurn: { en: "My turn!", hi: "अब मेरी बारी!" },
   back: { en: "Back", hi: "वापस" },
   check: { en: "Check", hi: "जाँचो" },

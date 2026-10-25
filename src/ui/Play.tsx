@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { Session, Turn } from "../engine/session";
-import { AnswerSet, hint as hintText, Item, Mistake, mistakeFeedback, nextItem, prompt } from "../engine/items";
+import { AnswerSet, hint as hintText, Mistake, mistakeFeedback, nextItem, prompt } from "../engine/items";
 import { rec, today } from "../engine/learner";
 import { makeRng } from "../engine/rng";
 import { GameId, GAMES, Lang, skill as skillOf } from "../engine/skills";
@@ -9,6 +9,7 @@ import type { Child, Family } from "../store";
 import { Keya } from "./Keya";
 import { chime, say, stop } from "./voice";
 import { t } from "./i18n";
+import { DemoStep, demoScript } from "./demo";
 import { Beads } from "./games/Beads";
 import { Stall } from "./games/Stall";
 import { Share } from "./games/Share";
@@ -18,6 +19,7 @@ import { Laddoo } from "./games/c1/Laddoo";
 import { Cat } from "./games/c1/Cat";
 import { Rangoli } from "./games/c1/Rangoli";
 import { English } from "./games/c1/English";
+import type { Item } from "../engine/items";
 import type { GameProps } from "./games/types";
 
 const GAME_VIEW: Record<GameId, (p: GameProps) => preact.JSX.Element | null> = {
@@ -46,7 +48,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
   const [mode, setMode] = useState<Mode>("play");
   const [grewSkill, setGrewSkill] = useState<string | null>(null);
   const demoed = useRef(new Set<string>());
-  const [demo, setDemo] = useState<{ item: Item; step: number } | null>(null);
+  const [demo, setDemo] = useState<{ item: Item; step: 0 | 1 | 2; script: DemoStep[] } | null>(null);
   const View = GAME_VIEW[game];
   const sessionId = useMemo(() => newId(), []);
 
@@ -69,9 +71,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
     const isNew = rec(child.learner, turn.skill).state === "not_started" && !session.log.some(l => l.skill === turn.skill);
     if (turn.phase === "practice" && isNew && !demoed.current.has(turn.skill)) {
       demoed.current.add(turn.skill);
-      const ex = nextItem(turn.skill, 1, makeRng(turn.no * 7919), new AnswerSet());
-      setDemo({ item: ex, step: 0 });
-      setMode("demo");
+      startDemo(nextItem(turn.skill, 1, makeRng(turn.no * 7919), new AnswerSet()));
       return;
     }
     const lead = turn.phase === "review" ? t("visitorSays", lang) + " " : turn.phase === "check" ? t("specialRequest", lang) + " " : "";
@@ -80,13 +80,24 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
     say(p, lang);
   }, [turn]);
 
-  // Demo narration: prompt → worked step → answer.
-  const demoLines = demo ? [
-    `${t("watchMe", lang)} ${prompt(demo.item, lang)}`,
-    hintText(demo.item, 3, lang),
-    hintText(demo.item, 4, lang),
-  ] : [];
-  useEffect(() => { if (mode === "demo" && demo) say(demoLines[demo.step], lang); }, [mode, demo]);
+  // The demo has three steps (see ui/demo.ts). Each step changes the screen and speaks its line in the same tap,
+  // so what Keya says and what the child sees always go together.
+  const startDemo = (item: Item) => {
+    const script = demoScript(item, lang);
+    setDemo({ item, step: 0, script });
+    setMode("demo");
+    say(script[0].line, lang);
+  };
+  const goDemoStep = (step: 0 | 1 | 2) => {
+    if (!demo) return;
+    setDemo({ ...demo, step });
+    say(demo.script[step].line, lang);
+  };
+  const startOwnTurn = () => {
+    setDemo(null); setMode("play");
+    const p = `${t("yourTurn", lang)} ${prompt(turn.item, lang)}`;
+    setMsg({ text: p, tone: "neutral" }); say(p, lang);
+  };
 
   const nextTurn = () => { setMsg(null); setTurn({ ...session.current() }); };
 
@@ -155,19 +166,25 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
   }
 
   if (mode === "demo" && demo) {
-    const last = demo.step >= demoLines.length - 1;
+    const cur = demo.script[demo.step];
+    const last = demo.step >= demo.script.length - 1;
     return (
       <div class="screen play">
         <Header game={game} lang={lang} phase="demo" />
-        <Bubble text={demoLines[demo.step]} tone="neutral" mood="" />
-        <View item={demo.item} hint={demo.step >= 1 ? 2 : 0} lang={lang} reveal={demo.step >= 2} locked
-          onAnswer={() => {}} onStepWrong={() => {}} onStepRight={() => {}} />
+        <Bubble text={cur.line} tone="neutral" mood="" />
+        <div class="demoview" data-demo-step={demo.step}>
+          <View item={demo.item} hint={cur.hint} lang={lang} reveal={cur.reveal} locked demo={demo.step}
+            onAnswer={() => {}} onStepWrong={() => {}} onStepRight={() => {}} />
+        </div>
+        <div class="demosteps" role="img" aria-label={`${demo.step + 1} / ${demo.script.length}`}>
+          {demo.script.map((_, i) => <span key={i} class={i === demo.step ? "on" : i < demo.step ? "past" : ""} />)}
+        </div>
         <div class="row">
-          <button class="soft" onClick={() => say(demoLines[demo.step], lang, true)}>🔊 {t("sayAgain", lang)}</button>
-          <button class="primary" onClick={() => {
-            if (!last) setDemo({ ...demo, step: demo.step + 1 });
-            else { setDemo(null); setMode("play"); const p = `${t("yourTurn", lang)} ${prompt(turn.item, lang)}`; setMsg({ text: p, tone: "neutral" }); say(p, lang); }
-          }}>{last ? t("myTurn", lang) : t("next", lang)}</button>
+          <button class="soft" data-act="say" onClick={() => say(cur.line, lang, true)}>🔊 {t("sayAgain", lang)}</button>
+          <button class="soft" data-act="again" onClick={() => startDemo(demo.item)}>↺ {t("watchAgain", lang)}</button>
+          <button class="primary" data-act={last ? "turn" : "next"} onClick={() => (last ? startOwnTurn() : goDemoStep((demo.step + 1) as 1 | 2))}>
+            {last ? t("myTurn", lang) : t("next", lang)}
+          </button>
         </div>
       </div>
     );

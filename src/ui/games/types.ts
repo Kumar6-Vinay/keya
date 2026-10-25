@@ -7,6 +7,7 @@ export interface GameProps {
   lang: Lang;
   reveal: boolean;     // show the correct answer (demo, or after 3 tries)
   locked: boolean;     // input disabled while feedback shows
+  demo?: 0 | 1 | 2;    // set only in Keya's "watch me" demo: 1 rings what to look at, 2 rings the answer (see ui/demo.ts)
   onAnswer: (ok: boolean, mistake?: Mistake) => void;            // finishes or retries the item
   onStepWrong: (mistake?: Mistake) => void;                       // multi-step items: a wrong step
   onStepRight: (msg: string) => void;                             // multi-step items: a right step
