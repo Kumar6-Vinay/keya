@@ -81,7 +81,7 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
 @media (max-width: 360px) { .town { grid-template-columns: 1fr; } }
 .district { border: 0; border-radius: 20px; padding: 14px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-height: 190px; position: relative; box-shadow: inset 0 -5px 0 rgba(0,0,0,.08); }
 .district b { font-family: var(--display); font-size: 20px; line-height: 1.1; }
-.district small { font-size: 14px; color: var(--muted); line-height: 1.25; }
+.district small { font-size: 14px; color: #5a4636; line-height: 1.25; }
 .dicon { font-size: 42px; }
 .plots { display: flex; gap: 6px; margin-top: 4px; }
 .plot { width: 30px; height: 30px; border-radius: 8px; border: 2px dashed rgba(59,42,30,.25); display: grid; place-items: center; font-size: 18px; }
@@ -344,3 +344,31 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
 .ground { height: 14px; margin: 0 -10px; background: #8fcf8a; border-top: 3px solid #6bb36a; }
 .townscore { position: absolute; left: 10px; top: 6px; margin: 0; font-family: var(--display); font-size: 16px; background: rgba(255,255,255,.8); border-radius: 999px; padding: 2px 10px; }
 @media (prefers-reduced-motion: no-preference) { .place.newest { animation: rise .6s ease-out; } }
+
+/* Skill path: levels of each game in order */
+.pathrow { display: flex; flex-direction: column; gap: 6px; }
+.pathname { font-family: var(--display); font-size: 18px; }
+.path { display: flex; align-items: center; }
+.node { position: relative; width: 56px; height: 56px; flex: none; margin-left: 22px; border-radius: 50%; border: 3px solid var(--line); background: #fff; font-size: 28px; display: grid; place-items: center; }
+.node:first-child { margin-left: 0; }
+.node .link { position: absolute; right: 100%; top: 50%; width: 22px; height: 4px; margin-top: -2px; background: var(--line); }
+.node.built { border-color: var(--leaf); background: var(--good-bg); }
+.node.next { border-color: var(--marigold); background: #fff4d9; color: var(--terracotta); }
+.node.shut { opacity: .55; font-size: 22px; }
+.pathnote { margin: 0; background: var(--hint-bg); color: var(--hint-ink); border-radius: 14px; padding: 8px 12px; }
+@media (prefers-reduced-motion: no-preference) { .node.next { animation: nudge 1.6s ease-in-out infinite; } @keyframes nudge { 50% { transform: scale(1.08); } } }
+/* Keya's home: a wall of stickers */
+.count { font-size: 16px; color: var(--muted); font-weight: 400; }
+.wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
+.sticker { aspect-ratio: 1; border-radius: 18px; display: grid; place-items: center; font-size: 40px; border: 0; }
+.sticker.got { background: #fff; box-shadow: 0 3px 0 var(--line); }
+.sticker.empty { background: rgba(0,0,0,.04); border: 2px dashed var(--line); filter: grayscale(1) opacity(.25); }
+.newsticker { display: flex; align-items: center; gap: 12px; background: #fff4d9; border: 2px solid var(--marigold); border-radius: 18px; padding: 8px 14px; }
+.newsticker b { font-family: var(--display); font-size: 20px; }
+.stk-pop { font-size: 52px; line-height: 1; }
+@media (prefers-reduced-motion: no-preference) { .stk-pop { animation: rise .6s ease-out; } }
+/* Easy-read letters and larger text, switched on by a grown-up */
+:root[data-readable] { --display: "OpenDyslexic", "Baloo 2", "Mukta", system-ui, sans-serif; --body: "OpenDyslexic", "Mukta", "Baloo 2", system-ui, sans-serif; }
+:root[data-readable] body { letter-spacing: .04em; word-spacing: .12em; line-height: 1.7; }
+:root[data-bigtext] body { font-size: 22px; }
+:root[data-bigtext] .bubble, :root[data-bigtext] .district small { font-size: 1.15em; }

@@ -139,6 +139,12 @@ export function Parent({ family, persist, onExit, onWiped }: { family: Family; p
 
       <div class="card">
         <h3>Family settings</h3>
+        <div class="field">Easy-read letters (a dyslexia-friendly typeface, wider spacing)<div class="seg">
+          <button aria-pressed={!family.readable} onClick={() => { family.readable = false; persist(); }}>Off</button>
+          <button aria-pressed={!!family.readable} onClick={() => { family.readable = true; persist(); }}>On</button></div></div>
+        <div class="field">Larger text<div class="seg">
+          <button aria-pressed={!family.bigText} onClick={() => { family.bigText = false; persist(); }}>Off</button>
+          <button aria-pressed={!!family.bigText} onClick={() => { family.bigText = true; persist(); }}>On</button></div></div>
         <div class="field">Daily time limit<div class="seg">{[8, 12, 15, 20].map(m => <button key={m} aria-pressed={family.limitMin === m} onClick={() => { family.limitMin = m; persist(); }}>{m} min</button>)}</div></div>
         <CloudBackup family={family} persist={persist} />
         <button class="soft" onClick={() => setShowData(s => !s)}>{showData ? "Hide my data" : "See all stored data"}</button>

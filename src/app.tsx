@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { dueReviews, today } from "./engine/learner";
-import { Cls, GameId, GAMES, Lang, skill as skillOf, SKILLS, skillsFor } from "./engine/skills";
+import { Cls, GameId, GAMES, Lang, skill as skillOf, skillsFor } from "./engine/skills";
 import { addChild, AVATARS, Child, Family, hashPin, load, newFamily, pinGate, prune, save, upsertSession } from "./store";
 import { DAILY_GOAL, gamesToday, goalMet, pickGame } from "./engine/daily";
 import { Keya } from "./ui/Keya";
 import { TownView } from "./ui/TownView";
+import { grantDailySticker, skillPath, STICKERS, stickerById } from "./engine/stickers";
 import { Play, PlayResult, PLACE_ICON } from "./ui/Play";
 import { Parent, PinPad } from "./ui/Parent";
 import { HOME, t } from "./ui/i18n";
@@ -16,8 +17,9 @@ type Screen =
   | { name: "who" }
   | { name: "map" }
   | { name: "play"; game: GameId }
-  | { name: "goodbye"; game: GameId; r: PlayResult }
+  | { name: "goodbye"; game: GameId; r: PlayResult; sticker?: string }
   | { name: "book" }
+  | { name: "home" }
   | { name: "pin" }
   | { name: "parent" };
 
@@ -25,7 +27,7 @@ const isRoot = (s: Screen) => s.name === "who" || s.name === "setup";
 /** One level up. The root screens have no parent. */
 const parentOf = (s: Screen): Screen | null => {
   switch (s.name) {
-    case "play": case "goodbye": case "book": return { name: "map" };
+    case "play": case "goodbye": case "book": case "home": return { name: "map" };
     case "map": case "pin": case "parent": return { name: "who" };
     default: return null;
   }
@@ -42,12 +44,19 @@ export function App() {
   const [onBreak, setOnBreak] = useState(false);
   const [, bump] = useState(0);
   const [voice, setVoiceState] = useState(voiceOn());
+  const [note, setNote] = useState("");
 
   const child = family?.children.find(c => c.id === childId) ?? null;
   const lang: Lang = child?.lang ?? "en";
   const persist = () => { if (family) { save(family); bump(x => x + 1); } };
 
   useEffect(() => { document.documentElement.lang = lang === "hi" ? "hi" : "en"; }, [lang]);
+  useEffect(() => {
+    const r = document.documentElement;
+    r.toggleAttribute("data-readable", !!family?.readable);
+    r.toggleAttribute("data-bigtext", !!family?.bigText);
+    if (family?.readable) { import("@fontsource/opendyslexic/latin-400.css"); import("@fontsource/opendyslexic/latin-700.css"); }   // fetched only when switched on
+  }, [family?.readable, family?.bigText]);
 
   // Every screen change goes through here: speech stops, and the browser history keeps exactly one entry above
   // the root while a child is inside, so the phone's back button goes up one level instead of closing the app.
@@ -139,7 +148,11 @@ export function App() {
             onSave={r => { saveSession(r); persist(); }}
             onMid={m => { midPlay.current = m; }}
             onBreak={() => { stop(); setOnBreak(true); say(t("breakSay", lang), lang); }}
-            onEnd={r => { saveSession(r); prune(family, today(family.tz)); persist(); setScreen({ name: "goodbye", game: screen.game, r }); }} />
+            onEnd={r => {
+              saveSession(r); prune(family, today(family.tz));
+              const sticker = goalMet(child, today(family.tz)) ? grantDailySticker(child, today(family.tz))?.id : undefined;
+              persist(); setScreen({ name: "goodbye", game: screen.game, r, sticker });
+            }} />
         </div>
         {onBreak && (
           <div class="screen break">
@@ -155,7 +168,8 @@ export function App() {
 
   if (screen.name === "goodbye") {
     const { r, game } = screen;
-    const line = `${goalMet(child, today(family.tz)) ? t("goalDone", lang) + " " : ""}${t("goodbyeSay", lang)} ${HOME[game][lang]}`;
+    const got = screen.sticker ? stickerById(screen.sticker) : undefined;
+    const line = `${goalMet(child, today(family.tz)) ? t("goalDone", lang) + " " : ""}${got ? `${t("newSticker", lang)} ${got.name[lang]}. ` : ""}${t("goodbyeSay", lang)} ${HOME[game][lang]}`;
     return (
       <div class="app">{top}
         <div class="screen goodbye">
@@ -165,6 +179,7 @@ export function App() {
             <li>{t("todayYou", lang)}: <b>{r.alone}</b> {t("solvedAlone", lang)}</li>
             {r.grown.map(id => <li key={id}>{PLACE_ICON[id]} {skillOf(id).canDo[lang]}</li>)}
           </ul>
+          {got && <div class="newsticker" role="img" aria-label={`${t("newSticker", lang)} ${got.name[lang]}`}><span class="stk-pop">{got.icon}</span><b>{t("newSticker", lang)}</b></div>}
           {goalMet(child, today(family.tz)) && <p class="goalnote">🌼🌼 {t("goalDone", lang)}</p>}
           <div class="homecard"><small>{t("homeChallenge", lang)}</small><p>{HOME[game][lang]}</p></div>
           <div class="row">
@@ -182,17 +197,48 @@ export function App() {
       <div class="app">{top}
         <div class="screen book">
           <h2>{t("skillBook", lang)}</h2>
-          <div class="cards">
-            {SKILLS.filter(s => child.openClasses.includes(s.cls)).map(s => {
-              const st = child.learner.skills[s.id]?.state ?? "not_started";
-              const got = st === "mastered" || st === "secure";
-              return <div key={s.id} class={`skillcard ${got ? "" : "dim"}`}><span class="ic">{got ? PLACE_ICON[s.id] : "⬜"}</span><b>{s.canDo[lang]}</b></div>;
-            })}
-          </div>
+          {note && <p class="pathnote" aria-live="polite">{note}</p>}
+          {GAMES.filter(g => child.openClasses.includes(g.cls)).map(g => (
+            <div key={g.id} class="pathrow">
+              <b class="pathname"><span aria-hidden="true">{DISTRICT[g.id].icon}</span> {g.name[lang]}</b>
+              <div class="path">
+                {skillPath(child, g.id).map(({ skill: sk, state }, i) => (
+                  <button key={sk.id} class={`node ${state}`} aria-label={state === "shut" ? `${sk.canDo[lang]} (${t("pathShut", lang)})` : state === "next" ? `${sk.canDo[lang]} (${t("pathNext", lang)})` : sk.canDo[lang]}
+                    onClick={() => {
+                      if (state === "next") { setScreen({ name: "play", game: g.id }); return; }
+                      if (state === "built") { setNote(sk.canDo[lang]); say(sk.canDo[lang], lang, true); }
+                      else { setNote(t("pathShut", lang)); say(t("pathShut", lang), lang, true); }
+                    }}>
+                    <span aria-hidden="true">{state === "built" ? PLACE_ICON[sk.id] : state === "next" ? "▶" : "🔒"}</span>
+                    {i > 0 && <i class="link" aria-hidden="true" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
           <button class="primary" onClick={() => setScreen({ name: "map" })}>{t("back", lang)}</button>
         </div>
       </div>
     );
+
+  if (screen.name === "home") {
+    const have = new Map(child.stickers.map(s => [s.id, s]));
+    return (
+      <div class="app">{top}
+        <div class="screen keyahome">
+          <div class="guide"><Keya size={72} mood="cheer" /><p class="bubble neutral">{t("stickerHow", lang)}</p></div>
+          <h2>{t("keyaHome", lang)} <small class="count">{have.size} / {STICKERS.length}</small></h2>
+          <div class="wall">
+            {STICKERS.map(st => have.has(st.id)
+              ? <button key={st.id} class="sticker got" aria-label={st.name[lang]} onClick={() => say(st.name[lang], lang, true)}><span aria-hidden="true">{st.icon}</span></button>
+              : <span key={st.id} class="sticker empty" aria-hidden="true">{st.icon}</span>)}
+          </div>
+          <button class="primary" onClick={() => setScreen({ name: "map" })}>{t("back", lang)}</button>
+        </div>
+        <SayOnce text={t("keyaHome", lang)} lang={lang} />
+      </div>
+    );
+  }
 
   // Town map
   const day = today(family.tz);
@@ -203,7 +249,8 @@ export function App() {
         <div class="maphead">
           <span class="avatar sm">{child.avatar}</span><b>{child.nickname}</b>
           <button class="ghost" onClick={() => { child.lang = lang === "hi" ? "en" : "hi"; persist(); }}>{lang === "hi" ? "English" : "हिंदी"}</button>
-          <button class="ghost" onClick={() => setScreen({ name: "book" })}>📖 {t("skillBook", lang)}</button>
+          <button class="ghost" onClick={() => { setNote(""); setScreen({ name: "book" }); }}>📖 {t("skillBook", lang)}</button>
+          <button class="ghost" onClick={() => setScreen({ name: "home" })}>🏡 {t("keyaHome", lang)}</button>
         </div>
         <button class="playkeya" onClick={() => setScreen({ name: "play", game: pickGame(child, day) })}>
           <Keya size={64} />
