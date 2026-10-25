@@ -3,6 +3,7 @@
 import { activeMisconceptions, emptyLearner, Learner, State } from "./engine/learner";
 import type { Mistake } from "./engine/items";
 import { Cls, GameId, Lang, skill as skillOf } from "./engine/skills";
+import { HOME } from "./ui/i18n";
 
 export interface Attempt { skill: string; correct: boolean; hint: number; mistake?: Mistake; phase: string }
 export interface SessionSummary { id: string; date: string; game: GameId; minutes: number; items: number; alone: number; grown: string[]; attempts: Attempt[] }
@@ -150,3 +151,13 @@ export const pinGate = {
   fail: (now = Date.now()) => { const fails = readPin().fails + 1; writePin({ fails, until: now + lockMs(fails) }); },
   ok: () => writePin({ fails: 0, until: 0 }),
 };
+
+/** The week as plain text a parent can send to a partner, grandparent or teacher. Nothing leaves the phone until they press Share. */
+export function reportText(c: Child, r: Report): string {
+  const lines = [`Keya: ${c.nickname}'s week (${r.from} to ${r.to})`];
+  lines.push(r.sessions ? `Played ${r.minutes} min in ${r.sessions} game${r.sessions === 1 ? "" : "s"}${r.aloneShare === null ? "" : `, ${r.aloneShare}% done alone`}.` : "No games played this week.");
+  if (r.learned.length) lines.push("", "New this week:", ...r.learned.map(x => `- ${x.name}: ${x.canDo}`));
+  if (r.practise.length) lines.push("", "Needs more practice:", ...r.practise.map(x => `- ${x.name}`));
+  if (r.home) lines.push("", "Try at home:", HOME[r.home].en, HOME[r.home].hi);
+  return lines.join("\n");
+}

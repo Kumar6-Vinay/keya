@@ -339,6 +339,46 @@ export function hint(it: Item, level: number, lang: Lang): string {
   }
 }
 
+/** The reason an answer is right, in a sentence or two. Said after a right answer and when an item is shown out after
+ *  three tries, so a child hears why, not only "well done". Built from the worked hint steps, which already carry the reasoning. */
+export function explain(it: Item, lang: Lang): string {
+  const h = (n: number) => hint(it, n, lang);
+  if (isC1(it)) {
+    switch (it.kind) {
+      case "count": return it.bundle && it.n > 10 ? h(3) : T(lang, `You counted up to ${it.n}.`, `तुमने ${it.n} तक गिना।`);
+      case "bond": return h(4);
+      case "arith1": return h(4);
+      case "pick": switch (it.mode) {
+        case "more": case "less": {
+          const [a, b] = it.seq!.map(Number), n = it.answer === "A" ? a : b;
+          return T(lang, `One basket has ${a} and the other has ${b}, so ${n} is ${it.mode === "more" ? "more" : "less"}.`,
+            `एक टोकरी में ${a} और दूसरी में ${b} हैं, इसलिए ${n} ${it.mode === "more" ? "ज़्यादा" : "कम"} है।`);
+        }
+        case "position": case "shape": case "shape_obj": return h(2);
+        case "pattern": return T(lang, `The pattern repeats, so ${it.answer} comes next.`, `पैटर्न दोहराता है, इसलिए ${it.answer} अगला है।`);
+        case "pattern_fix": return T(lang, `It repeats the same way, except number ${Number(it.answer) + 1}.`, `यह एक जैसा दोहराता है, सिवाय नंबर ${Number(it.answer) + 1} के।`);
+        case "num_next": return T(lang, `${it.seq![2]} and one more is ${it.answer}.`, `${it.seq![2]} और एक ज़्यादा, ${it.answer}।`);
+        case "rhyme_odd": return `${h(3)} ${h(4)}`;
+        case "num_match": return T(lang, `You counted them one by one: there are ${it.answer}.`, `तुमने एक-एक करके गिना: ${it.answer} हैं।`);
+        case "sight": return T(lang, `You listened and found the word "${it.target}".`, `तुमने सुनकर शब्द "${it.target}" ढूँढ लिया।`);
+        case "vocab": return T(lang, `You found the ${it.target}.`, `तुमने ${it.target} ढूँढ लिया।`);
+        case "sentence": return T(lang, "This picture shows everything in the sentence.", "इस तस्वीर में पूरे वाक्य की बात है।");
+        case "colour": case "size": return h(4);
+        default: return h(3);
+      }
+    }
+  }
+  switch (it.kind) {
+    case "pv_build": case "pv_read": case "h_build": case "pv_compare": case "money_add": case "money_change": case "share": return `${h(3)} ${h(4)}`;
+    case "fraction": return h(4);
+    case "column": {
+      const ans = it.op === "+" ? it.a + it.b : it.a - it.b;
+      return T(lang, `${it.a} ${it.op === "+" ? "+" : "−"} ${it.b} = ${ans}. You worked one column at a time, starting with the ones.`,
+        `${it.a} ${it.op === "+" ? "+" : "−"} ${it.b} = ${ans}। तुमने एक-एक कॉलम किया, इकाई से शुरू करके।`);
+    }
+  }
+}
+
 /** Short, task-focused words after a known mistake. */
 export function mistakeFeedback(m: Mistake | undefined, lang: Lang): string {
   switch (m) {

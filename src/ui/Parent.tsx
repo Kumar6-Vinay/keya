@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { dismissMisconception, today } from "../engine/learner";
 import { MISTAKE_TEXT } from "../engine/items";
 import { Cls, GAMES } from "../engine/skills";
-import { addChild, AVATARS, Family, exportJson, weeklyReport, wipe } from "../store";
+import { addChild, AVATARS, Family, exportJson, reportText, weeklyReport, wipe } from "../store";
 import { HOME } from "./i18n";
 import { CloudBackup } from "./Cloud";
 import { testVoice, voiceStatus } from "./voice";
@@ -49,6 +49,7 @@ export function Parent({ family, persist, onExit, onWiped }: { family: Family; p
   const [sel, setSel] = useState(family.children[0]?.id ?? "");
   const [confirm, setConfirm] = useState<"" | "child" | "all">("");
   const [showData, setShowData] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState(""), [cls, setCls] = useState<Cls>(1);
   const child = family.children.find(c => c.id === sel);
@@ -95,6 +96,15 @@ export function Parent({ family, persist, onExit, onWiped }: { family: Family; p
             ) : <p class="muted">Nothing to flag.</p>}
             <h4>Try at home</h4>
             <p>{r.home ? HOME[r.home].en : HOME[GAMES.find(g => child.openClasses.includes(g.cls))?.id ?? "beads"].en}</p>
+            <div class="row">
+              <button class="soft" onClick={async () => {
+                const text = reportText(child, r);
+                try { if (navigator.share) { await navigator.share({ text }); return; } } catch { return; }       // closing the share sheet is not an error
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+              }}>📤 Share this week · भेजें</button>
+              <button class="soft" onClick={async () => { try { await navigator.clipboard.writeText(reportText(child, r)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard blocked */ } }}>
+                {copied ? "Copied ✓" : "Copy"}</button>
+            </div>
             <p class="muted small">Observations disappear after 30 days unless seen again. Mastery means right without help on fresh problems; it is checked again after 2 and 7 days.</p>
           </div>
 
