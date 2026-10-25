@@ -288,3 +288,10 @@ h1 { font-size: 30px; } h2 { font-size: 26px; } h3 { font-size: 20px; } h4 { mar
 .speech-notice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--hint-bg); color: var(--hint-ink); border: 1px solid var(--marigold); border-radius: 14px; padding: 8px 12px; font-size: 15px; margin-bottom: 8px; }
 .speech-notice span { flex: 1; min-width: 180px; }
 .demo-focus:disabled, .demo-answer:disabled { opacity: 1; }
+
+/* back and home */
+.topbar { gap: 8px; }
+.navbtns { display: flex; gap: 8px; flex: 1; }
+.navbtn { min-height: 48px; min-width: 48px; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); font-size: 16px; display: inline-flex; align-items: center; gap: 6px; }
+.leave-confirm { background: var(--hint-bg); border: 1px solid var(--marigold); border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+.leave-confirm p { margin: 0; }

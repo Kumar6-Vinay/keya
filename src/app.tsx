@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { dueReviews, today } from "./engine/learner";
 import { Cls, GameId, GAMES, Lang, skill as skillOf, SKILLS, skillsFor } from "./engine/skills";
 import { addChild, AVATARS, Child, Family, hashPin, load, newFamily, prune, save, upsertSession } from "./store";
@@ -19,9 +19,23 @@ type Screen =
   | { name: "pin" }
   | { name: "parent" };
 
+const isRoot = (s: Screen) => s.name === "who" || s.name === "setup";
+/** One level up. The root screens have no parent. */
+const parentOf = (s: Screen): Screen | null => {
+  switch (s.name) {
+    case "play": case "goodbye": case "book": return { name: "map" };
+    case "map": case "pin": case "parent": return { name: "who" };
+    default: return null;
+  }
+};
+
 export function App() {
   const [family, setFamily] = useState<Family | null>(() => load());
-  const [screen, setScreen] = useState<Screen>(() => (load() ? { name: "who" } : { name: "setup" }));
+  const [screen, setScreenRaw] = useState<Screen>(() => (load() ? { name: "who" } : { name: "setup" }));
+  const screenRef = useRef(screen); screenRef.current = screen;
+  const midPlay = useRef(false);                       // a game is under way: leaving asks once, gently
+  const ignorePop = useRef(false);
+  const [confirm, setConfirm] = useState<Screen | null>(null);
   const [childId, setChildId] = useState<string | null>(null);
   const [onBreak, setOnBreak] = useState(false);
   const [, bump] = useState(0);
@@ -33,16 +47,57 @@ export function App() {
 
   useEffect(() => { document.documentElement.lang = lang === "hi" ? "hi" : "en"; }, [lang]);
 
+  // Every screen change goes through here: speech stops, and the browser history keeps exactly one entry above
+  // the root while a child is inside, so the phone's back button goes up one level instead of closing the app.
+  const doGo = (target: Screen, viaPop = false) => {
+    stop(); setOnBreak(false); setConfirm(null); midPlay.current = false;
+    const cur = screenRef.current;
+    if (viaPop) { if (!isRoot(target)) history.pushState({ keya: 1 }, ""); }
+    else if (isRoot(cur) && !isRoot(target)) history.pushState({ keya: 1 }, "");
+    else if (!isRoot(cur) && isRoot(target)) { ignorePop.current = true; history.back(); }
+    screenRef.current = target;
+    setScreenRaw(target);
+  };
+  const setScreen = (s: Screen) => doGo(s);
+  const tryLeave = (target: Screen, viaPop = false) => {
+    if (screenRef.current.name === "play" && midPlay.current) { if (viaPop) history.pushState({ keya: 1 }, ""); setConfirm(target); return; }
+    doGo(target, viaPop);
+  };
+  useEffect(() => {
+    const onPop = () => {
+      if (ignorePop.current) { ignorePop.current = false; return; }
+      const up = parentOf(screenRef.current);
+      if (up) tryLeave(up, true);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   if (!family || screen.name === "setup")
     return <Setup onDone={f => { save(f); setFamily(f); setScreen({ name: "who" }); }} />;
 
+  const back = parentOf(screen);
+  const home: Screen | null = screen.name === "who" || screen.name === "map" ? null : { name: screen.name === "pin" || screen.name === "parent" || !child ? "who" : "map" };
   const top = (
     <>
       <header class="topbar">
+        <nav class="navbtns">
+          {back && <button class="navbtn" aria-label="back" onClick={() => tryLeave(back)}><span aria-hidden="true">←</span> {t("back", lang)}</button>}
+          {home && <button class="navbtn" aria-label="home" onClick={() => tryLeave(home)}><span aria-hidden="true">🏠</span> {t("home", lang)}</button>}
+        </nav>
         <span class="brand">{t("appName", lang)}</span>
         <button class="ghost" aria-pressed={voice} aria-label="sound" onClick={() => { setVoice(!voice); setVoiceState(!voice); }}>{voice ? "🔊" : "🔇"}</button>
       </header>
       <SpeechNotice lang={lang} />
+      {confirm && (
+        <div class="leave-confirm" role="dialog" aria-label="leave">
+          <p>{t("leaveAsk", lang)}</p>
+          <div class="row">
+            <button class="primary" onClick={() => setConfirm(null)}>{t("stay", lang)}</button>
+            <button class="soft" onClick={() => doGo(confirm)}>{t("leave", lang)}</button>
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -80,6 +135,7 @@ export function App() {
         <div hidden={onBreak}>
           <Play family={family} child={child} game={screen.game}
             onSave={r => { saveSession(r); persist(); }}
+            onMid={m => { midPlay.current = m; }}
             onBreak={() => { stop(); setOnBreak(true); say(t("breakSay", lang), lang); }}
             onEnd={r => { saveSession(r); prune(family, today(family.tz)); persist(); setScreen({ name: "goodbye", game: screen.game, r }); }} />
         </div>
@@ -142,7 +198,6 @@ export function App() {
     <div class="app">{top}
       <div class="screen map">
         <div class="maphead">
-          <button class="ghost" aria-label="back" onClick={() => setScreen({ name: "who" })}>↩</button>
           <span class="avatar sm">{child.avatar}</span><b>{child.nickname}</b>
           <button class="ghost" onClick={() => { child.lang = lang === "hi" ? "en" : "hi"; persist(); }}>{lang === "hi" ? "English" : "हिंदी"}</button>
           <button class="ghost" onClick={() => setScreen({ name: "book" })}>📖 {t("skillBook", lang)}</button>

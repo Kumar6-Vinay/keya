@@ -31,8 +31,9 @@ export interface PlayResult { id: string; minutes: number; items: number; alone:
 
 type Mode = "demo" | "play" | "grew";
 
-export function Play({ family, child, game, onSave, onEnd, onBreak }: {
+export function Play({ family, child, game, onSave, onEnd, onBreak, onMid }: {
   family: Family; child: Child; game: GameId;
+  onMid: (midPlay: boolean) => void;
   onSave: (r: PlayResult) => void;
   onEnd: (r: PlayResult) => void;
   onBreak: () => void;
@@ -58,11 +59,14 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
   // Time limit: finish the current item, then say goodbye.
   useEffect(() => {
     const id = setInterval(() => { if (session.minutes() >= family.limitMin) session.timeUp(); }, 15000);
-    return () => { clearInterval(id); stop(); };
+    // Leaving by Back or Home keeps what was done so far.
+    return () => { clearInterval(id); stop(); if (session.log.length) onSave(result()); };
   }, []);
 
   // Test hook (dev builds only): lets the automated test read the current item.
   if (import.meta.env.DEV) (window as unknown as { __turn: Turn }).__turn = turn;
+
+  useEffect(() => { onMid(session.log.length > 0); }, [turn]);
 
   // New item: maybe a demo first (new skill), then the spoken prompt.
   useEffect(() => {
@@ -103,6 +107,7 @@ export function Play({ family, child, game, onSave, onEnd, onBreak }: {
 
   const onAnswer = (ok: boolean, mistake?: Mistake) => {
     const o = session.submit(ok, mistake);
+    onMid(true);
     onSave(result());
     if (ok) {
       chime("good");
